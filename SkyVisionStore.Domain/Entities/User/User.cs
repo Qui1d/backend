@@ -1,4 +1,4 @@
-﻿namespace SkyVisionStore.Api.Domain
+﻿namespace SkyVisionStore.Domain.Entities.User
 {
     public class User
     {
@@ -7,5 +7,4 @@
         public string Email { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }
     }
-
 }

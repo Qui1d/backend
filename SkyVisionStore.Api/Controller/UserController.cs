@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using SkyVisionStore.Api.Domain;
+using SkyVisionStore.Domain.Entities.User;
 
 namespace SkyVisionStore.Api.Controller
 {
