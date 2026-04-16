@@ -1,4 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using SkyVisionStore.BusinessLogic;
+using SkyVisionStore.BusinessLogic.Interfaces;
 using SkyVisionStore.Domain.Entities.User;
 
 namespace SkyVisionStore.Api.Controller
@@ -7,19 +9,24 @@ namespace SkyVisionStore.Api.Controller
     [ApiController]
     public class UserController : ControllerBase
     {
-        private static readonly List<User> _users = new();
-        private static int _nextId = 1;
+        private readonly IUserBL _userBL;
+
+        public UserController()
+        {
+            var bl = new BusinessLogic();
+            _userBL = bl.GetUserBL();
+        }
 
         [HttpGet("all")]
         public IActionResult GetAllUsers()
         {
-            return Ok(_users);
+            return Ok(_userBL.GetAll());
         }
 
         [HttpGet("{id}")]
         public IActionResult GetUserById(int id)
         {
-            var user = _users.FirstOrDefault(u => u.Id == id);
+            var user = _userBL.GetById(id);
 
             if (user == null)
             {
@@ -32,41 +39,32 @@ namespace SkyVisionStore.Api.Controller
         [HttpPost]
         public IActionResult CreateUser([FromBody] User user)
         {
-            user.Id = _nextId++;
-            user.CreatedAt = DateTime.UtcNow;
-
-            _users.Add(user);
-
-            return Created($"/api/user/{user.Id}", user);
+            var createdUser = _userBL.Create(user);
+            return Created($"/api/user/{createdUser.Id}", createdUser);
         }
 
         [HttpPut("{id}")]
         public IActionResult UpdateUser(int id, [FromBody] User updatedUser)
         {
-            var existingUser = _users.FirstOrDefault(u => u.Id == id);
-
-            if (existingUser == null)
-            {
-                return NotFound(new { Message = $"User with ID {id} not found" });
-            }
-
-            existingUser.Username = updatedUser.Username;
-            existingUser.Email = updatedUser.Email;
-
-            return Ok(existingUser);
-        }
-
-        [HttpDelete("{id}")]
-        public IActionResult DeleteUser(int id)
-        {
-            var user = _users.FirstOrDefault(u => u.Id == id);
+            var user = _userBL.Update(id, updatedUser);
 
             if (user == null)
             {
                 return NotFound(new { Message = $"User with ID {id} not found" });
             }
 
-            _users.Remove(user);
+            return Ok(user);
+        }
+
+        [HttpDelete("{id}")]
+        public IActionResult DeleteUser(int id)
+        {
+            var deleted = _userBL.Delete(id);
+
+            if (!deleted)
+            {
+                return NotFound(new { Message = $"User with ID {id} not found" });
+            }
 
             return NoContent();
         }
