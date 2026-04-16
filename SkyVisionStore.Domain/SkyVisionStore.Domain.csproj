@@ -6,4 +6,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\SkyVisionStore.Helpers\SkyVisionStore.Helpers.csproj" />
+  </ItemGroup>
+
 </Project>

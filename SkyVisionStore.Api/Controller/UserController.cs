@@ -13,7 +13,7 @@ namespace SkyVisionStore.Api.Controller
 
         public UserController()
         {
-            var bl = new BusinessLogic();
+            var bl = new SkyVisionStore.BusinessLogic.BusinessLogic();
             _userBL = bl.GetUserBL();
         }
 
