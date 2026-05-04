@@ -10,8 +10,4 @@
     <ProjectReference Include="..\SkyVisionStore.Helpers\SkyVisionStore.Helpers.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Entities\Refs\" />
-  </ItemGroup>
-
 </Project>
