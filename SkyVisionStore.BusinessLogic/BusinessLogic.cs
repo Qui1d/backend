@@ -7,6 +7,12 @@ namespace SkyVisionStore.BusinessLogic
         public IUserBL GetUserBL()
         {
             return new UserBL();
+
+        }
+        public IProductBL GetProductBL()
+        {
+            return new ProductBL();
         }
     }
+
 }
