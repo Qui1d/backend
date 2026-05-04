@@ -1,8 +1,8 @@
 ﻿using SkyVisionStore.Domain.Entities.User;
 
-namespace SkyVisionStore.BusinessLogic.Interfaces
+namespace SkyVisionStore.BusinessLogic.Interface
 {
-    public interface IUserBL
+    public interface IUserActions
     {
         List<User> GetAll();
         User? GetById(int id);

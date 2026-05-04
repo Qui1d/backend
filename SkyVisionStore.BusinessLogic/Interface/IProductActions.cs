@@ -1,8 +1,8 @@
 ﻿using SkyVisionStore.Domain.Entities.Product;
 
-namespace SkyVisionStore.BusinessLogic.Interfaces
+namespace SkyVisionStore.BusinessLogic.Interface
 {
-    public interface IProductBL
+    public interface IProductActions
     {
         List<Product> GetAll();
         Product? GetById(int id);

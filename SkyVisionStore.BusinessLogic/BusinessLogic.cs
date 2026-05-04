@@ -1,18 +1,19 @@
-﻿using SkyVisionStore.BusinessLogic.Interfaces;
+﻿using SkyVisionStore.BusinessLogic.Core.Product;
+using SkyVisionStore.BusinessLogic.Core.User;
+using SkyVisionStore.BusinessLogic.Interface;
 
 namespace SkyVisionStore.BusinessLogic
 {
     public class BusinessLogic
     {
-        public IUserBL GetUserBL()
+        public IUserActions GetUserActions()
         {
-            return new UserBL();
-
+            return new UserActions();
         }
-        public IProductBL GetProductBL()
+
+        public IProductActions GetProductActions()
         {
-            return new ProductBL();
+            return new ProductActions();
         }
     }
-
 }

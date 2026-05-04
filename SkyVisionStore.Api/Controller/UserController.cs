@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using SkyVisionStore.BusinessLogic;
-using SkyVisionStore.BusinessLogic.Interfaces;
+using SkyVisionStore.BusinessLogic.Interface;
 using SkyVisionStore.Domain.Entities.User;
 
 namespace SkyVisionStore.Api.Controller
@@ -9,24 +9,24 @@ namespace SkyVisionStore.Api.Controller
     [ApiController]
     public class UserController : ControllerBase
     {
-        private readonly IUserBL _userBL;
+        private readonly IUserActions _userActions;
 
         public UserController()
         {
             var bl = new SkyVisionStore.BusinessLogic.BusinessLogic();
-            _userBL = bl.GetUserBL();
+            _userActions = bl.GetUserActions();
         }
 
         [HttpGet("all")]
         public IActionResult GetAllUsers()
         {
-            return Ok(_userBL.GetAll());
+            return Ok(_userActions.GetAll());
         }
 
         [HttpGet("{id}")]
         public IActionResult GetUserById(int id)
         {
-            var user = _userBL.GetById(id);
+            var user = _userActions.GetById(id);
 
             if (user == null)
             {
@@ -39,14 +39,14 @@ namespace SkyVisionStore.Api.Controller
         [HttpPost]
         public IActionResult CreateUser([FromBody] User user)
         {
-            var createdUser = _userBL.Create(user);
+            var createdUser = _userActions.Create(user);
             return Created($"/api/user/{createdUser.Id}", createdUser);
         }
 
         [HttpPut("{id}")]
         public IActionResult UpdateUser(int id, [FromBody] User updatedUser)
         {
-            var user = _userBL.Update(id, updatedUser);
+            var user = _userActions.Update(id, updatedUser);
 
             if (user == null)
             {
@@ -59,7 +59,7 @@ namespace SkyVisionStore.Api.Controller
         [HttpDelete("{id}")]
         public IActionResult DeleteUser(int id)
         {
-            var deleted = _userBL.Delete(id);
+            var deleted = _userActions.Delete(id);
 
             if (!deleted)
             {
