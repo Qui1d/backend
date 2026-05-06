@@ -1,12 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace SkyVisionStore.Domain.Models.Cart
+﻿namespace SkyVisionStore.Domain.Models.Cart
 {
-    internal class AddToCartModel
+    public class AddToCartModel
     {
+        public int UserId { get; set; }
+        public int ProductId { get; set; }
+        public int Quantity { get; set; }
     }
 }

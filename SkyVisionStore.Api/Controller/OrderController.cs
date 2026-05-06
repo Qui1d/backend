@@ -1,5 +1,8 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using SkyVisionStore.BusinessLogic;
+using SkyVisionStore.BusinessLogic.Interface;
+using SkyVisionStore.Domain.Enums;
+using SkyVisionStore.Domain.Models.Order;
 
 namespace SkyVisionStore.Api.Controller
 {
@@ -7,5 +10,70 @@ namespace SkyVisionStore.Api.Controller
     [ApiController]
     public class OrderController : ControllerBase
     {
+        private readonly IOrderActions _orderActions;
+
+        public OrderController()
+        {
+            var bl = new SkyVisionStore.BusinessLogic.BusinessLogic();
+            _orderActions = bl.GetOrderActions();
+        }
+
+        [HttpGet("user/{userId}")]
+        public IActionResult GetOrdersByUserId(int userId)
+        {
+            var orders = _orderActions.GetOrdersByUserId(userId);
+            return Ok(orders);
+        }
+
+        [HttpGet("{orderId}")]
+        public IActionResult GetOrderById(int orderId)
+        {
+            var order = _orderActions.GetOrderById(orderId);
+
+            if (order == null)
+            {
+                return NotFound(new { Message = $"Order with ID {orderId} not found" });
+            }
+
+            return Ok(order);
+        }
+
+        [HttpPost("create")]
+        public IActionResult CreateOrder([FromBody] CreateOrderModel model)
+        {
+            if (model == null)
+            {
+                return BadRequest(new { Message = "Order data is required" });
+            }
+
+            var order = _orderActions.CreateOrder(model);
+            return Created($"/api/order/{order.Id}", order);
+        }
+
+        [HttpPut("{orderId}/status")]
+        public IActionResult UpdateOrderStatus(int orderId, [FromQuery] OrderStatus status)
+        {
+            var order = _orderActions.UpdateOrderStatus(orderId, status);
+
+            if (order == null)
+            {
+                return NotFound(new { Message = $"Order with ID {orderId} not found" });
+            }
+
+            return Ok(order);
+        }
+
+        [HttpDelete("{orderId}")]
+        public IActionResult DeleteOrder(int orderId)
+        {
+            var deleted = _orderActions.DeleteOrder(orderId);
+
+            if (!deleted)
+            {
+                return NotFound(new { Message = $"Order with ID {orderId} not found" });
+            }
+
+            return NoContent();
+        }
     }
 }

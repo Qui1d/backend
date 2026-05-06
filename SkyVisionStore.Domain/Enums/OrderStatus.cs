@@ -1,12 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace SkyVisionStore.Domain.Enums
+﻿namespace SkyVisionStore.Domain.Enums
 {
-    internal class OrderStatus
+    public enum OrderStatus
     {
+        Pending = 0,
+        Paid = 1,
+        Completed = 2,
+        Cancelled = 3
     }
 }

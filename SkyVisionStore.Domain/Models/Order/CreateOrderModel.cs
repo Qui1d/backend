@@ -1,12 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using SkyVisionStore.Domain.Entities.Order;
 
 namespace SkyVisionStore.Domain.Models.Order
 {
-    internal class CreateOrderModel
+    public class CreateOrderModel
     {
+        public int UserId { get; set; }
+        public decimal TotalAmount { get; set; }
+        public List<OrderItem> Items { get; set; } = new();
     }
 }

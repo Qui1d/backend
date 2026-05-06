@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace SkyVisionStore.Domain.Models.Coupon
+﻿namespace SkyVisionStore.Domain.Models.Coupon
 {
-    internal class ActivateCouponModel
+    public class ActivateCouponModel
     {
+        public int UserId { get; set; }
+        public string CouponCode { get; set; } = string.Empty;
     }
 }

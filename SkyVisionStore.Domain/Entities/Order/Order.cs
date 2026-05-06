@@ -1,12 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using SkyVisionStore.Domain.Enums;
 
 namespace SkyVisionStore.Domain.Entities.Order
 {
-    internal class Order
+    public class Order
     {
+        public int Id { get; set; }
+        public int UserId { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public OrderStatus Status { get; set; } = OrderStatus.Pending;
+        public decimal TotalAmount { get; set; }
+        public List<OrderItem> Items { get; set; } = new();
     }
 }
