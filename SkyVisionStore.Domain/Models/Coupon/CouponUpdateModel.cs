@@ -1,15 +1,10 @@
 ﻿using SkyVisionStore.Domain.Enums;
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
-namespace SkyVisionStore.Domain.Entities.Coupon
+namespace SkyVisionStore.Domain.Models.Coupon
 {
-    public class Coupon
+    public class CouponUpdateModel
     {
-        [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int Id { get; set; }
-
         [Required]
         [StringLength(30, MinimumLength = 3)]
         public string Code { get; set; } = string.Empty;
@@ -22,7 +17,5 @@ namespace SkyVisionStore.Domain.Entities.Coupon
         public int DiscountPercent { get; set; }
 
         public CouponStatus Status { get; set; } = CouponStatus.Active;
-
-        public DateTime CreatedAt { get; set; }
     }
 }
