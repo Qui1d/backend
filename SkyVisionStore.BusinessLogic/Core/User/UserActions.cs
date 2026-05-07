@@ -1,4 +1,5 @@
 ﻿using SkyVisionStore.BusinessLogic.Interface;
+using SkyVisionStore.Domain.Models.User;
 using UserEntity = SkyVisionStore.Domain.Entities.User.User;
 
 namespace SkyVisionStore.BusinessLogic.Core.User
@@ -8,27 +9,60 @@ namespace SkyVisionStore.BusinessLogic.Core.User
         private static readonly List<UserEntity> _users = new();
         private static int _nextId = 1;
 
-        public List<UserEntity> GetAll()
+        public List<UserInfoModel> GetAll()
         {
-            return _users;
+            return _users.Select(ToInfoModel).ToList();
         }
 
-        public UserEntity? GetById(int id)
+        public UserInfoModel? GetById(int id)
         {
-            return _users.FirstOrDefault(u => u.Id == id);
+            var user = _users.FirstOrDefault(u => u.Id == id);
+
+            if (user == null)
+            {
+                return null;
+            }
+
+            return ToInfoModel(user);
         }
 
-        public UserEntity Create(UserEntity user)
+        public UserInfoModel? GetByEmailAndPassword(string email, string password)
         {
-            user.Id = _nextId++;
-            user.CreatedAt = DateTime.UtcNow;
+            var user = _users.FirstOrDefault(u =>
+                u.Email == email &&
+                u.Password == password);
 
-            _users.Add(user);
+            if (user == null)
+            {
+                return null;
+            }
 
-            return user;
+            return ToInfoModel(user);
         }
 
-        public UserEntity? Update(int id, UserEntity updatedUser)
+        public bool ExistsByEmail(string email)
+        {
+            return _users.Any(u => u.Email == email);
+        }
+
+        public UserInfoModel Create(UserCreateModel user)
+        {
+            var newUser = new UserEntity
+            {
+                Id = _nextId++,
+                Username = user.Username,
+                Email = user.Email,
+                Password = user.Password,
+                Role = user.Role,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _users.Add(newUser);
+
+            return ToInfoModel(newUser);
+        }
+
+        public UserInfoModel? Update(int id, UserUpdateModel updatedUser)
         {
             var existingUser = _users.FirstOrDefault(u => u.Id == id);
 
@@ -39,8 +73,10 @@ namespace SkyVisionStore.BusinessLogic.Core.User
 
             existingUser.Username = updatedUser.Username;
             existingUser.Email = updatedUser.Email;
+            existingUser.Password = updatedUser.Password;
+            existingUser.Role = updatedUser.Role;
 
-            return existingUser;
+            return ToInfoModel(existingUser);
         }
 
         public bool Delete(int id)
@@ -53,7 +89,20 @@ namespace SkyVisionStore.BusinessLogic.Core.User
             }
 
             _users.Remove(user);
+
             return true;
+        }
+
+        private static UserInfoModel ToInfoModel(UserEntity user)
+        {
+            return new UserInfoModel
+            {
+                Id = user.Id,
+                Username = user.Username,
+                Email = user.Email,
+                Role = user.Role,
+                CreatedAt = user.CreatedAt
+            };
         }
     }
 }

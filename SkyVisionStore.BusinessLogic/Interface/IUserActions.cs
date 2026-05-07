@@ -1,13 +1,17 @@
-﻿using SkyVisionStore.Domain.Entities.User;
+﻿using SkyVisionStore.Domain.Models.User;
 
 namespace SkyVisionStore.BusinessLogic.Interface
 {
     public interface IUserActions
     {
-        List<User> GetAll();
-        User? GetById(int id);
-        User Create(User user);
-        User? Update(int id, User updatedUser);
+        List<UserInfoModel> GetAll();
+
+        UserInfoModel? GetById(int id);
+
+        UserInfoModel Create(UserCreateModel user);
+
+        UserInfoModel? Update(int id, UserUpdateModel updatedUser);
+
         bool Delete(int id);
     }
 }

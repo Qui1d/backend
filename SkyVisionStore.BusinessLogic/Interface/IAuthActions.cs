@@ -1,11 +1,12 @@
-﻿using UserEntity = SkyVisionStore.Domain.Entities.User.User;
-using SkyVisionStore.Domain.Models.Auth;
+﻿using SkyVisionStore.Domain.Models.Auth;
+using SkyVisionStore.Domain.Models.User;
 
 namespace SkyVisionStore.BusinessLogic.Interface
 {
     public interface IAuthActions
     {
-        UserEntity? Login(UserLoginData loginData);
-        UserEntity? Register(UserRegisterData registerData);
+        UserInfoModel? Login(UserLoginData loginData);
+
+        UserInfoModel? Register(UserRegisterData registerData);
     }
 }

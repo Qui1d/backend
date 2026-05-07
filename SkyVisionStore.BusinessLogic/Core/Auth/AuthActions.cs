@@ -1,7 +1,7 @@
 ﻿using SkyVisionStore.BusinessLogic.Core.User;
 using SkyVisionStore.BusinessLogic.Interface;
-using UserEntity = SkyVisionStore.Domain.Entities.User.User;
 using SkyVisionStore.Domain.Models.Auth;
+using SkyVisionStore.Domain.Models.User;
 
 namespace SkyVisionStore.BusinessLogic.Core.Auth
 {
@@ -9,24 +9,23 @@ namespace SkyVisionStore.BusinessLogic.Core.Auth
     {
         private readonly UserActions _userActions = new();
 
-        public UserEntity? Login(UserLoginData loginData)
+        public UserInfoModel? Login(UserLoginData loginData)
         {
-            return _userActions.GetAll().FirstOrDefault(u =>
-                u.Email == loginData.Email &&
-                u.Password == loginData.Password);
+            return _userActions.GetByEmailAndPassword(
+                loginData.Email,
+                loginData.Password);
         }
 
-        public UserEntity? Register(UserRegisterData registerData)
+        public UserInfoModel? Register(UserRegisterData registerData)
         {
-            var existingUser = _userActions.GetAll()
-                .FirstOrDefault(u => u.Email == registerData.Email);
+            var existingUser = _userActions.ExistsByEmail(registerData.Email);
 
-            if (existingUser != null)
+            if (existingUser)
             {
                 return null;
             }
 
-            var newUser = new UserEntity
+            var newUser = new UserCreateModel
             {
                 Username = registerData.Username,
                 Email = registerData.Email,

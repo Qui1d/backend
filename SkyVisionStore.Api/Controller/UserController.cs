@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using SkyVisionStore.BusinessLogic;
 using SkyVisionStore.BusinessLogic.Interface;
-using SkyVisionStore.Domain.Entities.User;
+using SkyVisionStore.Domain.Models.User;
 
 namespace SkyVisionStore.Api.Controller
 {
@@ -37,14 +36,15 @@ namespace SkyVisionStore.Api.Controller
         }
 
         [HttpPost]
-        public IActionResult CreateUser([FromBody] User user)
+        public IActionResult CreateUser([FromBody] UserCreateModel user)
         {
             var createdUser = _userActions.Create(user);
+
             return Created($"/api/user/{createdUser.Id}", createdUser);
         }
 
         [HttpPut("{id}")]
-        public IActionResult UpdateUser(int id, [FromBody] User updatedUser)
+        public IActionResult UpdateUser(int id, [FromBody] UserUpdateModel updatedUser)
         {
             var user = _userActions.Update(id, updatedUser);
 
