@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using SkyVisionStore.BusinessLogic;
 using SkyVisionStore.BusinessLogic.Interface;
-using SkyVisionStore.Domain.Entities.Product;
+using SkyVisionStore.Domain.Models.Product;
 
 namespace SkyVisionStore.Api.Controller
 {
@@ -37,14 +36,15 @@ namespace SkyVisionStore.Api.Controller
         }
 
         [HttpPost]
-        public IActionResult CreateProduct([FromBody] Product product)
+        public IActionResult CreateProduct([FromBody] ProductCreateModel product)
         {
             var createdProduct = _productActions.Create(product);
+
             return Created($"/api/product/{createdProduct.Id}", createdProduct);
         }
 
         [HttpPut("{id}")]
-        public IActionResult UpdateProduct(int id, [FromBody] Product updatedProduct)
+        public IActionResult UpdateProduct(int id, [FromBody] ProductUpdateModel updatedProduct)
         {
             var product = _productActions.Update(id, updatedProduct);
 
