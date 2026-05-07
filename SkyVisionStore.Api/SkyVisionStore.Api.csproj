@@ -13,6 +13,7 @@
   <ItemGroup>
     <ProjectReference Include="..\SkyVisionStore.BusinessLogic\SkyVisionStore.BusinessLogic.csproj" />
     <ProjectReference Include="..\SkyVisionStore.Domain\SkyVisionStore.Domain.csproj" />
+    <ProjectReference Include="..\SkyVisionStore.DataAccess\SkyVisionStore.DataAccess.csproj" />
   </ItemGroup>
 
 </Project>

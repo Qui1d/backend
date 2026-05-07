@@ -1,4 +1,8 @@
+using SkyVisionStore.DataAccess;
+
 var builder = WebApplication.CreateBuilder(args);
+
+DbSession.ConnectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? string.Empty;
 
 //add services to the container
 builder.Services.AddControllers();

@@ -9,6 +9,7 @@
   <ItemGroup>
     <ProjectReference Include="..\SkyVisionStore.Domain\SkyVisionStore.Domain.csproj" />
     <ProjectReference Include="..\SkyVisionStore.Helpers\SkyVisionStore.Helpers.csproj" />
+    <ProjectReference Include="..\SkyVisionStore.DataAccess\SkyVisionStore.DataAccess.csproj" />
   </ItemGroup>
 
 </Project>
