@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using SkyVisionStore.BusinessLogic;
 using SkyVisionStore.BusinessLogic.Interface;
+using SkyVisionStore.Domain.Models.Favorite;
 
 namespace SkyVisionStore.Api.Controller
 {
@@ -16,21 +16,81 @@ namespace SkyVisionStore.Api.Controller
             _favoriteActions = bl.GetFavoriteActions();
         }
 
-        [HttpGet("{userId}")]
-        public IActionResult GetFavorites(int userId)
+        [HttpGet("all")]
+        public IActionResult GetAllFavorites()
         {
-            var favorites = _favoriteActions.GetFavorites(userId);
-            return Ok(favorites);
+            return Ok(_favoriteActions.GetAll());
         }
 
-        [HttpPost("{userId}/{productId}")]
-        public IActionResult AddToFavorites(int userId, int productId)
+        [HttpGet("{id:int}")]
+        public IActionResult GetFavoriteById(int id)
         {
-            var favorite = _favoriteActions.AddToFavorites(userId, productId);
+            var favorite = _favoriteActions.GetById(id);
+
+            if (favorite == null)
+            {
+                return NotFound(new { Message = $"Favorite with ID {id} not found" });
+            }
+
             return Ok(favorite);
         }
 
-        [HttpDelete("{userId}/{productId}")]
+        [HttpPost]
+        public IActionResult CreateFavorite([FromBody] FavoriteCreateModel favorite)
+        {
+            var createdFavorite = _favoriteActions.Create(favorite);
+
+            return Created($"/api/favorite/{createdFavorite.Id}", createdFavorite);
+        }
+
+        [HttpPut("{id:int}")]
+        public IActionResult UpdateFavorite(int id, [FromBody] FavoriteUpdateModel updatedFavorite)
+        {
+            var favorite = _favoriteActions.Update(id, updatedFavorite);
+
+            if (favorite == null)
+            {
+                return NotFound(new { Message = $"Favorite with ID {id} not found" });
+            }
+
+            return Ok(favorite);
+        }
+
+        [HttpDelete("{id:int}")]
+        public IActionResult DeleteFavorite(int id)
+        {
+            var deleted = _favoriteActions.Delete(id);
+
+            if (!deleted)
+            {
+                return NotFound(new { Message = $"Favorite with ID {id} not found" });
+            }
+
+            return NoContent();
+        }
+
+        [HttpGet("user/{userId:int}")]
+        public IActionResult GetUserFavorites(int userId)
+        {
+            var favorites = _favoriteActions.GetFavorites(userId);
+
+            return Ok(favorites);
+        }
+
+        [HttpPost("add")]
+        public IActionResult AddToFavorites([FromBody] FavoriteCreateModel favorite)
+        {
+            var addedFavorite = _favoriteActions.AddToFavorites(favorite.UserId, favorite.ProductId);
+
+            if (addedFavorite == null)
+            {
+                return BadRequest(new { Message = "Product is already in favorites" });
+            }
+
+            return Ok(addedFavorite);
+        }
+
+        [HttpDelete("remove/user/{userId:int}/product/{productId:int}")]
         public IActionResult RemoveFromFavorites(int userId, int productId)
         {
             var removed = _favoriteActions.RemoveFromFavorites(userId, productId);
