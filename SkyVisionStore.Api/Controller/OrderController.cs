@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using SkyVisionStore.BusinessLogic;
 using SkyVisionStore.BusinessLogic.Interface;
 using SkyVisionStore.Domain.Enums;
 using SkyVisionStore.Domain.Models.Order;
@@ -18,14 +17,21 @@ namespace SkyVisionStore.Api.Controller
             _orderActions = bl.GetOrderActions();
         }
 
-        [HttpGet("user/{userId}")]
+        [HttpGet("all")]
+        public IActionResult GetAllOrders()
+        {
+            return Ok(_orderActions.GetAll());
+        }
+
+        [HttpGet("user/{userId:int}")]
         public IActionResult GetOrdersByUserId(int userId)
         {
             var orders = _orderActions.GetOrdersByUserId(userId);
+
             return Ok(orders);
         }
 
-        [HttpGet("{orderId}")]
+        [HttpGet("{orderId:int}")]
         public IActionResult GetOrderById(int orderId)
         {
             var order = _orderActions.GetOrderById(orderId);
@@ -47,10 +53,24 @@ namespace SkyVisionStore.Api.Controller
             }
 
             var order = _orderActions.CreateOrder(model);
+
             return Created($"/api/order/{order.Id}", order);
         }
 
-        [HttpPut("{orderId}/status")]
+        [HttpPut("{orderId:int}")]
+        public IActionResult UpdateOrder(int orderId, [FromBody] OrderUpdateModel model)
+        {
+            var order = _orderActions.UpdateOrder(orderId, model);
+
+            if (order == null)
+            {
+                return NotFound(new { Message = $"Order with ID {orderId} not found" });
+            }
+
+            return Ok(order);
+        }
+
+        [HttpPut("{orderId:int}/status")]
         public IActionResult UpdateOrderStatus(int orderId, [FromQuery] OrderStatus status)
         {
             var order = _orderActions.UpdateOrderStatus(orderId, status);
@@ -63,7 +83,7 @@ namespace SkyVisionStore.Api.Controller
             return Ok(order);
         }
 
-        [HttpDelete("{orderId}")]
+        [HttpDelete("{orderId:int}")]
         public IActionResult DeleteOrder(int orderId)
         {
             var deleted = _orderActions.DeleteOrder(orderId);

@@ -1,8 +1,8 @@
 ﻿using SkyVisionStore.BusinessLogic.Interface;
-using OrderEntity = SkyVisionStore.Domain.Entities.Order.Order;
-using OrderItemEntity = SkyVisionStore.Domain.Entities.Order.OrderItem;
 using SkyVisionStore.Domain.Enums;
 using SkyVisionStore.Domain.Models.Order;
+using OrderEntity = SkyVisionStore.Domain.Entities.Order.Order;
+using OrderItemEntity = SkyVisionStore.Domain.Entities.Order.OrderItem;
 
 namespace SkyVisionStore.BusinessLogic.Core.Order
 {
@@ -12,17 +12,32 @@ namespace SkyVisionStore.BusinessLogic.Core.Order
         private static int _nextOrderId = 1;
         private static int _nextOrderItemId = 1;
 
-        public List<OrderEntity> GetOrdersByUserId(int userId)
+        public List<OrderInfoModel> GetAll()
         {
-            return _orders.Where(o => o.UserId == userId).ToList();
+            return _orders.Select(ToInfoModel).ToList();
         }
 
-        public OrderEntity? GetOrderById(int orderId)
+        public List<OrderInfoModel> GetOrdersByUserId(int userId)
         {
-            return _orders.FirstOrDefault(o => o.Id == orderId);
+            return _orders
+                .Where(o => o.UserId == userId)
+                .Select(ToInfoModel)
+                .ToList();
         }
 
-        public OrderEntity CreateOrder(CreateOrderModel model)
+        public OrderInfoModel? GetOrderById(int orderId)
+        {
+            var order = _orders.FirstOrDefault(o => o.Id == orderId);
+
+            if (order == null)
+            {
+                return null;
+            }
+
+            return ToInfoModel(order);
+        }
+
+        public OrderInfoModel CreateOrder(CreateOrderModel model)
         {
             var order = new OrderEntity
             {
@@ -48,10 +63,37 @@ namespace SkyVisionStore.BusinessLogic.Core.Order
             }
 
             _orders.Add(order);
-            return order;
+
+            return ToInfoModel(order);
         }
 
-        public OrderEntity? UpdateOrderStatus(int orderId, OrderStatus status)
+        public OrderInfoModel? UpdateOrder(int orderId, OrderUpdateModel model)
+        {
+            var existingOrder = _orders.FirstOrDefault(o => o.Id == orderId);
+
+            if (existingOrder == null)
+            {
+                return null;
+            }
+
+            existingOrder.UserId = model.UserId;
+            existingOrder.Status = model.Status;
+            existingOrder.TotalAmount = model.TotalAmount;
+
+            existingOrder.Items = model.Items.Select(item => new OrderItemEntity
+            {
+                Id = _nextOrderItemId++,
+                OrderId = existingOrder.Id,
+                ProductId = item.ProductId,
+                ProductName = item.ProductName,
+                Quantity = item.Quantity,
+                UnitPrice = item.UnitPrice
+            }).ToList();
+
+            return ToInfoModel(existingOrder);
+        }
+
+        public OrderInfoModel? UpdateOrderStatus(int orderId, OrderStatus status)
         {
             var order = _orders.FirstOrDefault(o => o.Id == orderId);
 
@@ -61,7 +103,8 @@ namespace SkyVisionStore.BusinessLogic.Core.Order
             }
 
             order.Status = status;
-            return order;
+
+            return ToInfoModel(order);
         }
 
         public bool DeleteOrder(int orderId)
@@ -74,7 +117,33 @@ namespace SkyVisionStore.BusinessLogic.Core.Order
             }
 
             _orders.Remove(order);
+
             return true;
+        }
+
+        private static OrderInfoModel ToInfoModel(OrderEntity order)
+        {
+            return new OrderInfoModel
+            {
+                Id = order.Id,
+                UserId = order.UserId,
+                CreatedAt = order.CreatedAt,
+                Status = order.Status,
+                TotalAmount = order.TotalAmount,
+                Items = order.Items.Select(ToOrderItemInfoModel).ToList()
+            };
+        }
+        private static OrderItemInfoModel ToOrderItemInfoModel(OrderItemEntity item)
+        {
+            return new OrderItemInfoModel
+            {
+                Id = item.Id,
+                OrderId = item.OrderId,
+                ProductId = item.ProductId,
+                ProductName = item.ProductName,
+                Quantity = item.Quantity,
+                UnitPrice = item.UnitPrice
+            };
         }
     }
 }
