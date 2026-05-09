@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using SkyVisionStore.Domain.Entities.Product;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SkyVisionStore.Domain.Entities.Order
@@ -20,10 +21,13 @@ namespace SkyVisionStore.Domain.Entities.Order
         public string ProductName { get; set; } = string.Empty;
 
         [Required]
-        [Range(1, 100)]
         public int Quantity { get; set; }
 
         [Required]
         public decimal UnitPrice { get; set; }
+
+        public Order Order { get; set; }
+
+        public Product Product { get; set; }
     }
 }

@@ -1,4 +1,7 @@
-﻿using SkyVisionStore.Domain.Enums;
+﻿using SkyVisionStore.Domain.Entities.Cart;
+using SkyVisionStore.Domain.Entities.Order;
+using SkyVisionStore.Domain.Entities.Refs;
+using SkyVisionStore.Domain.Enums;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -25,5 +28,13 @@ namespace SkyVisionStore.Domain.Entities.User
         public UserRole Role { get; set; } = UserRole.User;
 
         public DateTime CreatedAt { get; set; }
+
+        public List<CartItem> CartItems { get; set; } = new();
+
+        public List<UserFavorite> Favorites { get; set; } = new();
+
+        public List<Order> Orders { get; set; } = new();
+
+        public List<UserCoupon> UserCoupons { get; set; } = new();
     }
 }

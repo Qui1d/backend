@@ -1,11 +1,11 @@
-﻿using SkyVisionStore.Domain.Entities.Product;
+﻿using SkyVisionStore.Domain.Entities.Coupon;
 using SkyVisionStore.Domain.Entities.User;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace SkyVisionStore.Domain.Entities.Cart
+namespace SkyVisionStore.Domain.Entities.Refs
 {
-    public class CartItem
+    public class UserCoupon
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
@@ -15,15 +15,16 @@ namespace SkyVisionStore.Domain.Entities.Cart
         public int UserId { get; set; }
 
         [Required]
-        public int ProductId { get; set; }
+        public int CouponId { get; set; }
 
-        [Required]
-        public int Quantity { get; set; } = 1;
+        public bool IsUsed { get; set; }
 
-        public DateTime AddedAt { get; set; }
+        public DateTime AssignedAt { get; set; }
+
+        public DateTime? UsedAt { get; set; }
 
         public User User { get; set; }
 
-        public Product Product { get; set; }
+        public Coupon Coupon { get; set; }
     }
 }

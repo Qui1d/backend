@@ -3,9 +3,9 @@ using SkyVisionStore.Domain.Entities.User;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace SkyVisionStore.Domain.Entities.Cart
+namespace SkyVisionStore.Domain.Entities.Refs
 {
-    public class CartItem
+    public class UserFavorite
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
@@ -16,9 +16,6 @@ namespace SkyVisionStore.Domain.Entities.Cart
 
         [Required]
         public int ProductId { get; set; }
-
-        [Required]
-        public int Quantity { get; set; } = 1;
 
         public DateTime AddedAt { get; set; }
 

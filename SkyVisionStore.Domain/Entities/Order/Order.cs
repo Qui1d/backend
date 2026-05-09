@@ -1,4 +1,5 @@
-﻿using SkyVisionStore.Domain.Enums;
+﻿using SkyVisionStore.Domain.Entities.User;
+using SkyVisionStore.Domain.Enums;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -19,6 +20,8 @@ namespace SkyVisionStore.Domain.Entities.Order
 
         [Required]
         public decimal TotalAmount { get; set; }
+
+        public User User { get; set; }
 
         public List<OrderItem> Items { get; set; } = new();
     }

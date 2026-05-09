@@ -1,4 +1,8 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using SkyVisionStore.Domain.Entities.Cart;
+using SkyVisionStore.Domain.Entities.Order;
+using SkyVisionStore.Domain.Entities.Refs;
+using SkyVisionStore.Domain.Entities.User;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SkyVisionStore.Domain.Entities.Product
@@ -57,5 +61,11 @@ namespace SkyVisionStore.Domain.Entities.Product
         public bool IsUpcoming { get; set; }
 
         public DateTime CreatedAt { get; set; }
+
+        public List<CartItem> CartItems { get; set; } = new();
+
+        public List<UserFavorite> Favorites { get; set; } = new();
+
+        public List<OrderItem> OrderItems { get; set; } = new();
     }
 }
