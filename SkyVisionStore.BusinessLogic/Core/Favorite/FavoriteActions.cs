@@ -1,6 +1,6 @@
 ﻿using SkyVisionStore.BusinessLogic.Interface;
 using SkyVisionStore.Domain.Models.Favorite;
-using FavoriteEntity = SkyVisionStore.Domain.Entities.User.UserFavorite;
+using FavoriteEntity = SkyVisionStore.Domain.Entities.Refs.UserFavorite;
 
 namespace SkyVisionStore.BusinessLogic.Core.Favorite
 {

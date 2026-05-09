@@ -1,6 +1,6 @@
-﻿using SkyVisionStore.Domain.Entities.Product;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using ProductEntity = SkyVisionStore.Domain.Entities.Product.Product;
 
 namespace SkyVisionStore.Domain.Entities.Order
 {
@@ -26,8 +26,8 @@ namespace SkyVisionStore.Domain.Entities.Order
         [Required]
         public decimal UnitPrice { get; set; }
 
-        public Order Order { get; set; }
+        public Order Order { get; set; } = null!;
 
-        public Product Product { get; set; }
+        public ProductEntity Product { get; set; } = null!;
     }
 }

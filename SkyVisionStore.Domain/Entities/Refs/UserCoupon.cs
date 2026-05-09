@@ -1,7 +1,7 @@
-﻿using SkyVisionStore.Domain.Entities.Coupon;
-using SkyVisionStore.Domain.Entities.User;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using UserEntity = SkyVisionStore.Domain.Entities.User.User;
+using CouponEntity = SkyVisionStore.Domain.Entities.Coupon.Coupon;
 
 namespace SkyVisionStore.Domain.Entities.Refs
 {
@@ -23,8 +23,8 @@ namespace SkyVisionStore.Domain.Entities.Refs
 
         public DateTime? UsedAt { get; set; }
 
-        public User User { get; set; }
+        public UserEntity User { get; set; } = null!;
 
-        public Coupon Coupon { get; set; }
+        public CouponEntity Coupon { get; set; } = null!;
     }
 }

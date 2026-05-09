@@ -1,7 +1,7 @@
-﻿using SkyVisionStore.Domain.Entities.Product;
-using SkyVisionStore.Domain.Entities.User;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using UserEntity = SkyVisionStore.Domain.Entities.User.User;
+using ProductEntity = SkyVisionStore.Domain.Entities.Product.Product;
 
 namespace SkyVisionStore.Domain.Entities.Refs
 {
@@ -19,8 +19,8 @@ namespace SkyVisionStore.Domain.Entities.Refs
 
         public DateTime AddedAt { get; set; }
 
-        public User User { get; set; }
+        public UserEntity User { get; set; } = null!;
 
-        public Product Product { get; set; }
+        public ProductEntity Product { get; set; } = null!;
     }
 }

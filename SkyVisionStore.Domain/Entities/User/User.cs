@@ -1,9 +1,9 @@
 ﻿using SkyVisionStore.Domain.Entities.Cart;
-using SkyVisionStore.Domain.Entities.Order;
 using SkyVisionStore.Domain.Entities.Refs;
 using SkyVisionStore.Domain.Enums;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using OrderEntity = SkyVisionStore.Domain.Entities.Order.Order;
 
 namespace SkyVisionStore.Domain.Entities.User
 {
@@ -33,7 +33,7 @@ namespace SkyVisionStore.Domain.Entities.User
 
         public List<UserFavorite> Favorites { get; set; } = new();
 
-        public List<Order> Orders { get; set; } = new();
+        public List<OrderEntity> Orders { get; set; } = new();
 
         public List<UserCoupon> UserCoupons { get; set; } = new();
     }

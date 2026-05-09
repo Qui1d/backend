@@ -1,22 +1,24 @@
 ﻿using SkyVisionStore.BusinessLogic.Interface;
-using SkyVisionStore.Domain.Entities.User;
 using SkyVisionStore.Domain.Enums;
 using SkyVisionStore.Domain.Models.Coupon;
 using CouponEntity = SkyVisionStore.Domain.Entities.Coupon.Coupon;
+using UserCouponEntity = SkyVisionStore.Domain.Entities.Refs.UserCoupon;
 
 namespace SkyVisionStore.BusinessLogic.Core.Coupon
 {
     public class CouponActions : ICouponActions
     {
         private static readonly List<CouponEntity> _coupons = new();
-        private static readonly List<UserCoupon> _userCoupons = new();
+        private static readonly List<UserCouponEntity> _userCoupons = new();
 
         private static int _nextCouponId = 1;
         private static int _nextUserCouponId = 1;
 
         public List<CouponInfoModel> GetAll()
         {
-            return _coupons.Select(ToInfoModel).ToList();
+            return _coupons
+                .Select(ToInfoModel)
+                .ToList();
         }
 
         public CouponInfoModel? GetById(int id)
@@ -53,7 +55,8 @@ namespace SkyVisionStore.BusinessLogic.Core.Coupon
                 Description = coupon.Description,
                 DiscountPercent = coupon.DiscountPercent,
                 Status = coupon.Status,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                ExpiresAt = null
             };
 
             _coupons.Add(newCoupon);
@@ -92,14 +95,14 @@ namespace SkyVisionStore.BusinessLogic.Core.Coupon
             return true;
         }
 
-        public List<UserCoupon> GetUserCoupons(int userId)
+        public List<UserCouponEntity> GetUserCoupons(int userId)
         {
             return _userCoupons
                 .Where(c => c.UserId == userId)
                 .ToList();
         }
 
-        public UserCoupon? ActivateCoupon(ActivateCouponModel model)
+        public UserCouponEntity? ActivateCoupon(ActivateCouponModel model)
         {
             var coupon = _coupons.FirstOrDefault(c =>
                 c.Code.Equals(model.CouponCode, StringComparison.OrdinalIgnoreCase) &&
@@ -112,20 +115,21 @@ namespace SkyVisionStore.BusinessLogic.Core.Coupon
 
             var existingUserCoupon = _userCoupons.FirstOrDefault(c =>
                 c.UserId == model.UserId &&
-                c.CouponCode.Equals(model.CouponCode, StringComparison.OrdinalIgnoreCase));
+                c.CouponId == coupon.Id);
 
             if (existingUserCoupon != null)
             {
                 return null;
             }
 
-            var userCoupon = new UserCoupon
+            var userCoupon = new UserCouponEntity
             {
                 Id = _nextUserCouponId++,
                 UserId = model.UserId,
-                CouponCode = coupon.Code,
-                Status = CouponStatus.Active,
-                ActivatedAt = DateTime.UtcNow
+                CouponId = coupon.Id,
+                IsUsed = false,
+                AssignedAt = DateTime.UtcNow,
+                UsedAt = null
             };
 
             _userCoupons.Add(userCoupon);

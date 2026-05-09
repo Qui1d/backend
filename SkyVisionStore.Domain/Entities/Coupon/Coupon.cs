@@ -1,5 +1,4 @@
 ﻿using SkyVisionStore.Domain.Entities.Refs;
-using SkyVisionStore.Domain.Entities.User;
 using SkyVisionStore.Domain.Enums;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -15,6 +14,9 @@ namespace SkyVisionStore.Domain.Entities.Coupon
         [Required]
         [StringLength(50)]
         public string Code { get; set; } = string.Empty;
+
+        [StringLength(300)]
+        public string Description { get; set; } = string.Empty;
 
         [Required]
         public int DiscountPercent { get; set; }

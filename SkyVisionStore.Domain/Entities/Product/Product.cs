@@ -1,7 +1,6 @@
 ﻿using SkyVisionStore.Domain.Entities.Cart;
 using SkyVisionStore.Domain.Entities.Order;
 using SkyVisionStore.Domain.Entities.Refs;
-using SkyVisionStore.Domain.Entities.User;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
