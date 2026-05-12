@@ -1,16 +1,17 @@
 ﻿using SkyVisionStore.Domain.Models.Product;
+using ProductEntity = SkyVisionStore.Domain.Entities.Product.Product;
 
 namespace SkyVisionStore.BusinessLogic.Interface
 {
     public interface IProductActions
     {
-        List<ProductInfoModel> GetAll();
+        List<ProductEntity> GetAll();
 
-        ProductInfoModel? GetById(int id);
+        ProductEntity? GetById(int id);
 
-        ProductInfoModel Create(ProductCreateModel product);
+        ProductEntity Create(ProductCreateModel product);
 
-        ProductInfoModel? Update(int id, ProductUpdateModel updatedProduct);
+        ProductEntity? Update(int id, ProductUpdateModel updatedProduct);
 
         bool Delete(int id);
     }

@@ -1,4 +1,5 @@
 ﻿using SkyVisionStore.BusinessLogic.Interface;
+using SkyVisionStore.DataAccess.Context;
 using SkyVisionStore.Domain.Models.Product;
 using ProductEntity = SkyVisionStore.Domain.Entities.Product.Product;
 
@@ -6,31 +7,29 @@ namespace SkyVisionStore.BusinessLogic.Core.Product
 {
     public class ProductActions : IProductActions
     {
-        private static readonly List<ProductEntity> _products = new();
-        private static int _nextId = 1;
-
-        public List<ProductInfoModel> GetAll()
+        public List<ProductEntity> GetAll()
         {
-            return _products.Select(ToInfoModel).ToList();
+            using var db = new SkyVisionStoreContext();
+
+            return db.Products
+                .OrderBy(p => p.Id)
+                .ToList();
         }
 
-        public ProductInfoModel? GetById(int id)
+        public ProductEntity? GetById(int id)
         {
-            var product = _products.FirstOrDefault(p => p.Id == id);
+            using var db = new SkyVisionStoreContext();
 
-            if (product == null)
-            {
-                return null;
-            }
-
-            return ToInfoModel(product);
+            return db.Products
+                .FirstOrDefault(p => p.Id == id);
         }
 
-        public ProductInfoModel Create(ProductCreateModel product)
+        public ProductEntity Create(ProductCreateModel product)
         {
+            using var db = new SkyVisionStoreContext();
+
             var newProduct = new ProductEntity
             {
-                Id = _nextId++,
                 Title = product.Title,
                 Slug = product.Slug,
                 Platform = product.Platform,
@@ -42,21 +41,25 @@ namespace SkyVisionStore.BusinessLogic.Core.Product
                 RecommendedImage = product.RecommendedImage,
                 Region = product.Region,
                 Description = product.Description,
-                Requirements = ConvertRequirementsToString(product.Requirements),
+                Requirements = string.Join("\n", product.Requirements),
                 IsNew = product.IsNew,
                 IsPopular = product.IsPopular,
                 IsUpcoming = product.IsUpcoming,
                 CreatedAt = DateTime.UtcNow
             };
 
-            _products.Add(newProduct);
+            db.Products.Add(newProduct);
+            db.SaveChanges();
 
-            return ToInfoModel(newProduct);
+            return newProduct;
         }
 
-        public ProductInfoModel? Update(int id, ProductUpdateModel updatedProduct)
+        public ProductEntity? Update(int id, ProductUpdateModel updatedProduct)
         {
-            var existingProduct = _products.FirstOrDefault(p => p.Id == id);
+            using var db = new SkyVisionStoreContext();
+
+            var existingProduct = db.Products
+                .FirstOrDefault(p => p.Id == id);
 
             if (existingProduct == null)
             {
@@ -74,71 +77,32 @@ namespace SkyVisionStore.BusinessLogic.Core.Product
             existingProduct.RecommendedImage = updatedProduct.RecommendedImage;
             existingProduct.Region = updatedProduct.Region;
             existingProduct.Description = updatedProduct.Description;
-            existingProduct.Requirements = ConvertRequirementsToString(updatedProduct.Requirements);
+            existingProduct.Requirements = string.Join("\n", updatedProduct.Requirements);
             existingProduct.IsNew = updatedProduct.IsNew;
             existingProduct.IsPopular = updatedProduct.IsPopular;
             existingProduct.IsUpcoming = updatedProduct.IsUpcoming;
 
-            return ToInfoModel(existingProduct);
+            db.SaveChanges();
+
+            return existingProduct;
         }
 
         public bool Delete(int id)
         {
-            var product = _products.FirstOrDefault(p => p.Id == id);
+            using var db = new SkyVisionStoreContext();
+
+            var product = db.Products
+                .FirstOrDefault(p => p.Id == id);
 
             if (product == null)
             {
                 return false;
             }
 
-            _products.Remove(product);
+            db.Products.Remove(product);
+            db.SaveChanges();
 
             return true;
-        }
-
-        private static ProductInfoModel ToInfoModel(ProductEntity product)
-        {
-            return new ProductInfoModel
-            {
-                Id = product.Id,
-                Title = product.Title,
-                Slug = product.Slug,
-                Platform = product.Platform,
-                Genre = product.Genre,
-                Price = product.Price,
-                OldPrice = product.OldPrice,
-                Discount = product.Discount,
-                Image = product.Image,
-                RecommendedImage = product.RecommendedImage,
-                Region = product.Region,
-                Description = product.Description,
-                Requirements = ConvertRequirementsToArray(product.Requirements),
-                IsNew = product.IsNew,
-                IsPopular = product.IsPopular,
-                IsUpcoming = product.IsUpcoming,
-                CreatedAt = product.CreatedAt
-            };
-        }
-
-        private static string ConvertRequirementsToString(string[] requirements)
-        {
-            if (requirements == null || requirements.Length == 0)
-            {
-                return string.Empty;
-            }
-
-            return string.Join("; ", requirements);
-        }
-
-        private static string[] ConvertRequirementsToArray(string requirements)
-        {
-            if (string.IsNullOrWhiteSpace(requirements))
-            {
-                return Array.Empty<string>();
-            }
-
-            return requirements
-                .Split(";", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         }
     }
 }
