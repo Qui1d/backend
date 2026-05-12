@@ -1,4 +1,5 @@
 ﻿using SkyVisionStore.BusinessLogic.Interface;
+using SkyVisionStore.DataAccess.Context;
 using SkyVisionStore.Domain.Models.Favorite;
 using FavoriteEntity = SkyVisionStore.Domain.Entities.Refs.UserFavorite;
 
@@ -6,17 +7,22 @@ namespace SkyVisionStore.BusinessLogic.Core.Favorite
 {
     public class FavoriteActions : IFavoriteActions
     {
-        private static readonly List<FavoriteEntity> _favorites = new();
-        private static int _nextId = 1;
-
         public List<FavoriteInfoModel> GetAll()
         {
-            return _favorites.Select(ToInfoModel).ToList();
+            using var db = new SkyVisionStoreContext();
+
+            return db.UserFavorites
+                .OrderBy(f => f.Id)
+                .Select(f => ToInfoModel(f))
+                .ToList();
         }
 
         public FavoriteInfoModel? GetById(int id)
         {
-            var favorite = _favorites.FirstOrDefault(f => f.Id == id);
+            using var db = new SkyVisionStoreContext();
+
+            var favorite = db.UserFavorites
+                .FirstOrDefault(f => f.Id == id);
 
             if (favorite == null)
             {
@@ -28,92 +34,136 @@ namespace SkyVisionStore.BusinessLogic.Core.Favorite
 
         public FavoriteInfoModel Create(FavoriteCreateModel favorite)
         {
-            var newFavorite = new FavoriteEntity
+            var existingFavorite = AddToFavorites(favorite.UserId, favorite.ProductId);
+
+            if (existingFavorite != null)
             {
-                Id = _nextId++,
+                return existingFavorite;
+            }
+
+            return new FavoriteInfoModel
+            {
                 UserId = favorite.UserId,
                 ProductId = favorite.ProductId,
                 AddedAt = DateTime.UtcNow
             };
-
-            _favorites.Add(newFavorite);
-
-            return ToInfoModel(newFavorite);
         }
 
         public FavoriteInfoModel? Update(int id, FavoriteUpdateModel updatedFavorite)
         {
-            var existingFavorite = _favorites.FirstOrDefault(f => f.Id == id);
+            using var db = new SkyVisionStoreContext();
 
-            if (existingFavorite == null)
+            var favorite = db.UserFavorites
+                .FirstOrDefault(f => f.Id == id);
+
+            if (favorite == null)
             {
                 return null;
             }
 
-            existingFavorite.UserId = updatedFavorite.UserId;
-            existingFavorite.ProductId = updatedFavorite.ProductId;
+            var userExists = db.Users.Any(u => u.Id == updatedFavorite.UserId);
+            var productExists = db.Products.Any(p => p.Id == updatedFavorite.ProductId);
 
-            return ToInfoModel(existingFavorite);
+            if (!userExists || !productExists)
+            {
+                return null;
+            }
+
+            var duplicateFavorite = db.UserFavorites.FirstOrDefault(f =>
+                f.Id != id &&
+                f.UserId == updatedFavorite.UserId &&
+                f.ProductId == updatedFavorite.ProductId);
+
+            if (duplicateFavorite != null)
+            {
+                return null;
+            }
+
+            favorite.UserId = updatedFavorite.UserId;
+            favorite.ProductId = updatedFavorite.ProductId;
+            favorite.AddedAt = DateTime.UtcNow;
+
+            db.SaveChanges();
+
+            return ToInfoModel(favorite);
         }
 
         public bool Delete(int id)
         {
-            var favorite = _favorites.FirstOrDefault(f => f.Id == id);
+            using var db = new SkyVisionStoreContext();
+
+            var favorite = db.UserFavorites
+                .FirstOrDefault(f => f.Id == id);
 
             if (favorite == null)
             {
                 return false;
             }
 
-            _favorites.Remove(favorite);
+            db.UserFavorites.Remove(favorite);
+            db.SaveChanges();
 
             return true;
         }
 
         public List<FavoriteInfoModel> GetFavorites(int userId)
         {
-            return _favorites
+            using var db = new SkyVisionStoreContext();
+
+            return db.UserFavorites
                 .Where(f => f.UserId == userId)
-                .Select(ToInfoModel)
+                .OrderBy(f => f.Id)
+                .Select(f => ToInfoModel(f))
                 .ToList();
         }
 
         public FavoriteInfoModel? AddToFavorites(int userId, int productId)
         {
-            var existingFavorite = _favorites.FirstOrDefault(f =>
-                f.UserId == userId &&
-                f.ProductId == productId);
+            using var db = new SkyVisionStoreContext();
+
+            var userExists = db.Users.Any(u => u.Id == userId);
+            var productExists = db.Products.Any(p => p.Id == productId);
+
+            if (!userExists || !productExists)
+            {
+                return null;
+            }
+
+            var existingFavorite = db.UserFavorites
+                .FirstOrDefault(f => f.UserId == userId && f.ProductId == productId);
 
             if (existingFavorite != null)
             {
                 return null;
             }
 
-            var newFavorite = new FavoriteEntity
+            var favorite = new FavoriteEntity
             {
-                Id = _nextId++,
                 UserId = userId,
                 ProductId = productId,
                 AddedAt = DateTime.UtcNow
             };
 
-            _favorites.Add(newFavorite);
+            db.UserFavorites.Add(favorite);
+            db.SaveChanges();
 
-            return ToInfoModel(newFavorite);
+            return ToInfoModel(favorite);
         }
 
         public bool RemoveFromFavorites(int userId, int productId)
         {
-            var favorite = _favorites.FirstOrDefault(f =>
-                f.UserId == userId &&
-                f.ProductId == productId);
+            using var db = new SkyVisionStoreContext();
+
+            var favorite = db.UserFavorites
+                .FirstOrDefault(f => f.UserId == userId && f.ProductId == productId);
 
             if (favorite == null)
             {
                 return false;
             }
 
-            _favorites.Remove(favorite);
+            db.UserFavorites.Remove(favorite);
+            db.SaveChanges();
 
             return true;
         }
