@@ -1,4 +1,6 @@
-﻿using SkyVisionStore.BusinessLogic.Interface;
+﻿using Microsoft.EntityFrameworkCore;
+using SkyVisionStore.BusinessLogic.Interface;
+using SkyVisionStore.DataAccess.Context;
 using SkyVisionStore.Domain.Enums;
 using SkyVisionStore.Domain.Models.Coupon;
 using CouponEntity = SkyVisionStore.Domain.Entities.Coupon.Coupon;
@@ -8,22 +10,22 @@ namespace SkyVisionStore.BusinessLogic.Core.Coupon
 {
     public class CouponActions : ICouponActions
     {
-        private static readonly List<CouponEntity> _coupons = new();
-        private static readonly List<UserCouponEntity> _userCoupons = new();
-
-        private static int _nextCouponId = 1;
-        private static int _nextUserCouponId = 1;
-
         public List<CouponInfoModel> GetAll()
         {
-            return _coupons
-                .Select(ToInfoModel)
+            using var db = new SkyVisionStoreContext();
+
+            return db.Coupons
+                .OrderBy(c => c.Id)
+                .Select(c => ToInfoModel(c))
                 .ToList();
         }
 
         public CouponInfoModel? GetById(int id)
         {
-            var coupon = _coupons.FirstOrDefault(c => c.Id == id);
+            using var db = new SkyVisionStoreContext();
+
+            var coupon = db.Coupons
+                .FirstOrDefault(c => c.Id == id);
 
             if (coupon == null)
             {
@@ -35,8 +37,10 @@ namespace SkyVisionStore.BusinessLogic.Core.Coupon
 
         public CouponInfoModel? GetByCode(string code)
         {
-            var coupon = _coupons.FirstOrDefault(c =>
-                c.Code.Equals(code, StringComparison.OrdinalIgnoreCase));
+            using var db = new SkyVisionStoreContext();
+
+            var coupon = db.Coupons
+                .FirstOrDefault(c => c.Code.ToLower() == code.ToLower());
 
             if (coupon == null)
             {
@@ -48,9 +52,18 @@ namespace SkyVisionStore.BusinessLogic.Core.Coupon
 
         public CouponInfoModel Create(CouponCreateModel coupon)
         {
+            using var db = new SkyVisionStoreContext();
+
+            var existingCoupon = db.Coupons
+                .FirstOrDefault(c => c.Code.ToLower() == coupon.Code.ToLower());
+
+            if (existingCoupon != null)
+            {
+                return ToInfoModel(existingCoupon);
+            }
+
             var newCoupon = new CouponEntity
             {
-                Id = _nextCouponId++,
                 Code = coupon.Code,
                 Description = coupon.Description,
                 DiscountPercent = coupon.DiscountPercent,
@@ -59,16 +72,29 @@ namespace SkyVisionStore.BusinessLogic.Core.Coupon
                 ExpiresAt = null
             };
 
-            _coupons.Add(newCoupon);
+            db.Coupons.Add(newCoupon);
+            db.SaveChanges();
 
             return ToInfoModel(newCoupon);
         }
 
         public CouponInfoModel? Update(int id, CouponUpdateModel updatedCoupon)
         {
-            var existingCoupon = _coupons.FirstOrDefault(c => c.Id == id);
+            using var db = new SkyVisionStoreContext();
+
+            var existingCoupon = db.Coupons
+                .FirstOrDefault(c => c.Id == id);
 
             if (existingCoupon == null)
+            {
+                return null;
+            }
+
+            var duplicateCoupon = db.Coupons.FirstOrDefault(c =>
+                c.Id != id &&
+                c.Code.ToLower() == updatedCoupon.Code.ToLower());
+
+            if (duplicateCoupon != null)
             {
                 return null;
             }
@@ -78,34 +104,59 @@ namespace SkyVisionStore.BusinessLogic.Core.Coupon
             existingCoupon.DiscountPercent = updatedCoupon.DiscountPercent;
             existingCoupon.Status = updatedCoupon.Status;
 
+            db.SaveChanges();
+
             return ToInfoModel(existingCoupon);
         }
 
         public bool Delete(int id)
         {
-            var coupon = _coupons.FirstOrDefault(c => c.Id == id);
+            using var db = new SkyVisionStoreContext();
+
+            var coupon = db.Coupons
+                .FirstOrDefault(c => c.Id == id);
 
             if (coupon == null)
             {
                 return false;
             }
 
-            _coupons.Remove(coupon);
+            var userCoupons = db.UserCoupons
+                .Where(uc => uc.CouponId == id)
+                .ToList();
+
+            db.UserCoupons.RemoveRange(userCoupons);
+            db.Coupons.Remove(coupon);
+            db.SaveChanges();
 
             return true;
         }
 
-        public List<UserCouponEntity> GetUserCoupons(int userId)
+        public List<UserCouponInfoModel> GetUserCoupons(int userId)
         {
-            return _userCoupons
-                .Where(c => c.UserId == userId)
+            using var db = new SkyVisionStoreContext();
+
+            return db.UserCoupons
+                .Include(uc => uc.Coupon)
+                .Where(uc => uc.UserId == userId)
+                .OrderBy(uc => uc.Id)
+                .Select(uc => ToUserCouponInfoModel(uc))
                 .ToList();
         }
 
-        public UserCouponEntity? ActivateCoupon(ActivateCouponModel model)
+        public UserCouponInfoModel? ActivateCoupon(ActivateCouponModel model)
         {
-            var coupon = _coupons.FirstOrDefault(c =>
-                c.Code.Equals(model.CouponCode, StringComparison.OrdinalIgnoreCase) &&
+            using var db = new SkyVisionStoreContext();
+
+            var userExists = db.Users.Any(u => u.Id == model.UserId);
+
+            if (!userExists)
+            {
+                return null;
+            }
+
+            var coupon = db.Coupons.FirstOrDefault(c =>
+                c.Code.ToLower() == model.CouponCode.ToLower() &&
                 c.Status == CouponStatus.Active);
 
             if (coupon == null)
@@ -113,18 +164,17 @@ namespace SkyVisionStore.BusinessLogic.Core.Coupon
                 return null;
             }
 
-            var existingUserCoupon = _userCoupons.FirstOrDefault(c =>
+            var alreadyActivated = db.UserCoupons.Any(c =>
                 c.UserId == model.UserId &&
                 c.CouponId == coupon.Id);
 
-            if (existingUserCoupon != null)
+            if (alreadyActivated)
             {
                 return null;
             }
 
             var userCoupon = new UserCouponEntity
             {
-                Id = _nextUserCouponId++,
                 UserId = model.UserId,
                 CouponId = coupon.Id,
                 IsUsed = false,
@@ -132,9 +182,12 @@ namespace SkyVisionStore.BusinessLogic.Core.Coupon
                 UsedAt = null
             };
 
-            _userCoupons.Add(userCoupon);
+            db.UserCoupons.Add(userCoupon);
+            db.SaveChanges();
 
-            return userCoupon;
+            userCoupon.Coupon = coupon;
+
+            return ToUserCouponInfoModel(userCoupon);
         }
 
         private static CouponInfoModel ToInfoModel(CouponEntity coupon)
@@ -147,6 +200,21 @@ namespace SkyVisionStore.BusinessLogic.Core.Coupon
                 DiscountPercent = coupon.DiscountPercent,
                 Status = coupon.Status,
                 CreatedAt = coupon.CreatedAt
+            };
+        }
+
+        private static UserCouponInfoModel ToUserCouponInfoModel(UserCouponEntity userCoupon)
+        {
+            return new UserCouponInfoModel
+            {
+                Id = userCoupon.Id,
+                UserId = userCoupon.UserId,
+                CouponId = userCoupon.CouponId,
+                CouponCode = userCoupon.Coupon != null ? userCoupon.Coupon.Code : string.Empty,
+                DiscountPercent = userCoupon.Coupon != null ? userCoupon.Coupon.DiscountPercent : 0,
+                IsUsed = userCoupon.IsUsed,
+                AssignedAt = userCoupon.AssignedAt,
+                UsedAt = userCoupon.UsedAt
             };
         }
     }

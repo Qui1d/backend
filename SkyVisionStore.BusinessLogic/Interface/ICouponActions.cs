@@ -1,5 +1,4 @@
 ﻿using SkyVisionStore.Domain.Models.Coupon;
-using UserCouponEntity = SkyVisionStore.Domain.Entities.Refs.UserCoupon;
 
 namespace SkyVisionStore.BusinessLogic.Interface
 {
@@ -17,8 +16,8 @@ namespace SkyVisionStore.BusinessLogic.Interface
 
         bool Delete(int id);
 
-        List<UserCouponEntity> GetUserCoupons(int userId);
+        List<UserCouponInfoModel> GetUserCoupons(int userId);
 
-        UserCouponEntity? ActivateCoupon(ActivateCouponModel model);
+        UserCouponInfoModel? ActivateCoupon(ActivateCouponModel model);
     }
 }
