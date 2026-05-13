@@ -1,17 +1,21 @@
 using SkyVisionStore.DataAccess;
+using SkyVisionStore.DataAccess.Seed;
 
 var builder = WebApplication.CreateBuilder(args);
 
 DbSession.ConnectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? string.Empty;
 
-//add services to the container
+// Add services to the container
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-//configure the http request pipeline
+// Seed database
+DbSeeder.SeedProducts();
+
+// Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -19,7 +23,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
 app.UseAuthorization();
+
 app.MapControllers();
 
 app.Run();
