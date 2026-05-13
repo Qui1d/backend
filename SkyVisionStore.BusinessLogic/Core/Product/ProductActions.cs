@@ -1,6 +1,6 @@
 ﻿using SkyVisionStore.BusinessLogic.Interface;
 using SkyVisionStore.DataAccess.Context;
-using SkyVisionStore.Domain.Models.Product;
+
 using ProductEntity = SkyVisionStore.Domain.Entities.Product.Product;
 
 namespace SkyVisionStore.BusinessLogic.Core.Product
@@ -24,7 +24,17 @@ namespace SkyVisionStore.BusinessLogic.Core.Product
                 .FirstOrDefault(p => p.Id == id);
         }
 
-        public ProductEntity Create(ProductCreateModel product)
+        public ProductEntity? GetBySlug(string slug)
+        {
+            using var db = new SkyVisionStoreContext();
+
+            var normalizedSlug = slug.Trim().ToLower();
+
+            return db.Products
+                .FirstOrDefault(p => p.Slug.ToLower() == normalizedSlug);
+        }
+
+        public ProductEntity Create(ProductEntity product)
         {
             using var db = new SkyVisionStoreContext();
 
@@ -41,7 +51,7 @@ namespace SkyVisionStore.BusinessLogic.Core.Product
                 RecommendedImage = product.RecommendedImage,
                 Region = product.Region,
                 Description = product.Description,
-                Requirements = string.Join("\n", product.Requirements),
+                Requirements = product.Requirements,
                 IsNew = product.IsNew,
                 IsPopular = product.IsPopular,
                 IsUpcoming = product.IsUpcoming,
@@ -54,7 +64,7 @@ namespace SkyVisionStore.BusinessLogic.Core.Product
             return newProduct;
         }
 
-        public ProductEntity? Update(int id, ProductUpdateModel updatedProduct)
+        public ProductEntity? Update(int id, ProductEntity updatedProduct)
         {
             using var db = new SkyVisionStoreContext();
 
@@ -77,7 +87,7 @@ namespace SkyVisionStore.BusinessLogic.Core.Product
             existingProduct.RecommendedImage = updatedProduct.RecommendedImage;
             existingProduct.Region = updatedProduct.Region;
             existingProduct.Description = updatedProduct.Description;
-            existingProduct.Requirements = string.Join("\n", updatedProduct.Requirements);
+            existingProduct.Requirements = updatedProduct.Requirements;
             existingProduct.IsNew = updatedProduct.IsNew;
             existingProduct.IsPopular = updatedProduct.IsPopular;
             existingProduct.IsUpcoming = updatedProduct.IsUpcoming;

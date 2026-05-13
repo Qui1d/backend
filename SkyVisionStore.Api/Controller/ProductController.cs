@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using SkyVisionStore.BusinessLogic.Interface;
-using SkyVisionStore.Domain.Models.Product;
+
+using ProductEntity = SkyVisionStore.Domain.Entities.Product.Product;
 
 namespace SkyVisionStore.Api.Controller
 {
@@ -22,6 +23,19 @@ namespace SkyVisionStore.Api.Controller
             return Ok(_productActions.GetAll());
         }
 
+        [HttpGet("slug/{slug}")]
+        public IActionResult GetProductBySlug(string slug)
+        {
+            var product = _productActions.GetBySlug(slug);
+
+            if (product == null)
+            {
+                return NotFound(new { Message = $"Product with slug '{slug}' not found" });
+            }
+
+            return Ok(product);
+        }
+
         [HttpGet("{id}")]
         public IActionResult GetProductById(int id)
         {
@@ -36,7 +50,7 @@ namespace SkyVisionStore.Api.Controller
         }
 
         [HttpPost]
-        public IActionResult CreateProduct([FromBody] ProductCreateModel product)
+        public IActionResult CreateProduct([FromBody] ProductEntity product)
         {
             var createdProduct = _productActions.Create(product);
 
@@ -44,7 +58,7 @@ namespace SkyVisionStore.Api.Controller
         }
 
         [HttpPut("{id}")]
-        public IActionResult UpdateProduct(int id, [FromBody] ProductUpdateModel updatedProduct)
+        public IActionResult UpdateProduct(int id, [FromBody] ProductEntity updatedProduct)
         {
             var product = _productActions.Update(id, updatedProduct);
 
