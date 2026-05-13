@@ -1,47 +1,67 @@
 ﻿using SkyVisionStore.BusinessLogic.Interface;
-using SkyVisionStore.Domain.Entities.Cart;
+using SkyVisionStore.DataAccess.Context;
 using SkyVisionStore.Domain.Models.Cart;
+using CartItemEntity = SkyVisionStore.Domain.Entities.Cart.CartItem;
 
 namespace SkyVisionStore.BusinessLogic.Core.Cart
 {
     public class CartActions : ICartActions
     {
-        private static readonly List<CartItem> _cartItems = new();
-        private static int _nextId = 1;
-
-        public List<CartItem> GetCartByUserId(int userId)
+        public List<CartItemEntity> GetCartByUserId(int userId)
         {
-            return _cartItems.Where(c => c.UserId == userId).ToList();
+            using var db = new SkyVisionStoreContext();
+
+            return db.CartItems
+                .Where(c => c.UserId == userId)
+                .OrderBy(c => c.Id)
+                .ToList();
         }
 
-        public CartItem AddToCart(AddToCartModel model)
+        public CartItemEntity? AddToCart(AddToCartModel model)
         {
-            var existingItem = _cartItems.FirstOrDefault(c =>
+            using var db = new SkyVisionStoreContext();
+
+            var userExists = db.Users.Any(u => u.Id == model.UserId);
+            var productExists = db.Products.Any(p => p.Id == model.ProductId);
+
+            if (!userExists || !productExists)
+            {
+                return null;
+            }
+
+            var quantity = model.Quantity <= 0 ? 1 : model.Quantity;
+
+            var existingItem = db.CartItems.FirstOrDefault(c =>
                 c.UserId == model.UserId &&
                 c.ProductId == model.ProductId);
 
             if (existingItem != null)
             {
-                existingItem.Quantity += model.Quantity;
+                existingItem.Quantity += quantity;
+                db.SaveChanges();
+
                 return existingItem;
             }
 
-            var cartItem = new CartItem
+            var cartItem = new CartItemEntity
             {
-                Id = _nextId++,
                 UserId = model.UserId,
                 ProductId = model.ProductId,
-                Quantity = model.Quantity,
+                Quantity = quantity,
                 AddedAt = DateTime.UtcNow
             };
 
-            _cartItems.Add(cartItem);
+            db.CartItems.Add(cartItem);
+            db.SaveChanges();
+
             return cartItem;
         }
 
-        public CartItem? UpdateCartItem(int userId, int productId, int quantity)
+        public CartItemEntity? UpdateCartItem(int userId, int productId, int quantity)
         {
-            var item = _cartItems.FirstOrDefault(c =>
+            using var db = new SkyVisionStoreContext();
+
+            var item = db.CartItems.FirstOrDefault(c =>
                 c.UserId == userId &&
                 c.ProductId == productId);
 
@@ -50,13 +70,18 @@ namespace SkyVisionStore.BusinessLogic.Core.Cart
                 return null;
             }
 
-            item.Quantity = quantity;
+            item.Quantity = quantity <= 0 ? 1 : quantity;
+
+            db.SaveChanges();
+
             return item;
         }
 
         public bool RemoveFromCart(int userId, int productId)
         {
-            var item = _cartItems.FirstOrDefault(c =>
+            using var db = new SkyVisionStoreContext();
+
+            var item = db.CartItems.FirstOrDefault(c =>
                 c.UserId == userId &&
                 c.ProductId == productId);
 
@@ -65,23 +90,27 @@ namespace SkyVisionStore.BusinessLogic.Core.Cart
                 return false;
             }
 
-            _cartItems.Remove(item);
+            db.CartItems.Remove(item);
+            db.SaveChanges();
+
             return true;
         }
 
         public bool ClearCart(int userId)
         {
-            var items = _cartItems.Where(c => c.UserId == userId).ToList();
+            using var db = new SkyVisionStoreContext();
+
+            var items = db.CartItems
+                .Where(c => c.UserId == userId)
+                .ToList();
 
             if (!items.Any())
             {
                 return false;
             }
 
-            foreach (var item in items)
-            {
-                _cartItems.Remove(item);
-            }
+            db.CartItems.RemoveRange(items);
+            db.SaveChanges();
 
             return true;
         }
