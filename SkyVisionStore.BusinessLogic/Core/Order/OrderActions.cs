@@ -1,4 +1,6 @@
-﻿using SkyVisionStore.BusinessLogic.Interface;
+﻿using Microsoft.EntityFrameworkCore;
+using SkyVisionStore.BusinessLogic.Interface;
+using SkyVisionStore.DataAccess.Context;
 using SkyVisionStore.Domain.Enums;
 using SkyVisionStore.Domain.Models.Order;
 using OrderEntity = SkyVisionStore.Domain.Entities.Order.Order;
@@ -8,26 +10,36 @@ namespace SkyVisionStore.BusinessLogic.Core.Order
 {
     public class OrderActions : IOrderActions
     {
-        private static readonly List<OrderEntity> _orders = new();
-        private static int _nextOrderId = 1;
-        private static int _nextOrderItemId = 1;
-
         public List<OrderInfoModel> GetAll()
         {
-            return _orders.Select(ToInfoModel).ToList();
+            using var db = new SkyVisionStoreContext();
+
+            return db.Orders
+                .Include(o => o.Items)
+                .OrderByDescending(o => o.CreatedAt)
+                .Select(o => ToInfoModel(o))
+                .ToList();
         }
 
         public List<OrderInfoModel> GetOrdersByUserId(int userId)
         {
-            return _orders
+            using var db = new SkyVisionStoreContext();
+
+            return db.Orders
+                .Include(o => o.Items)
                 .Where(o => o.UserId == userId)
-                .Select(ToInfoModel)
+                .OrderByDescending(o => o.CreatedAt)
+                .Select(o => ToInfoModel(o))
                 .ToList();
         }
 
         public OrderInfoModel? GetOrderById(int orderId)
         {
-            var order = _orders.FirstOrDefault(o => o.Id == orderId);
+            using var db = new SkyVisionStoreContext();
+
+            var order = db.Orders
+                .Include(o => o.Items)
+                .FirstOrDefault(o => o.Id == orderId);
 
             if (order == null)
             {
@@ -39,63 +51,120 @@ namespace SkyVisionStore.BusinessLogic.Core.Order
 
         public OrderInfoModel CreateOrder(CreateOrderModel model)
         {
+            using var db = new SkyVisionStoreContext();
+
+            var userExists = db.Users.Any(u => u.Id == model.UserId);
+
+            if (!userExists)
+            {
+                throw new InvalidOperationException($"User with ID {model.UserId} does not exist.");
+            }
+
+            var orderItems = model.Items.Select(item =>
+            {
+                var productExists = db.Products.Any(p => p.Id == item.ProductId);
+
+                if (!productExists)
+                {
+                    throw new InvalidOperationException($"Product with ID {item.ProductId} does not exist.");
+                }
+
+                return new OrderItemEntity
+                {
+                    ProductId = item.ProductId,
+                    ProductName = item.ProductName,
+                    Quantity = item.Quantity <= 0 ? 1 : item.Quantity,
+                    UnitPrice = item.UnitPrice
+                };
+            }).ToList();
+
+            var totalAmount = model.TotalAmount > 0
+                ? model.TotalAmount
+                : orderItems.Sum(item => item.UnitPrice * item.Quantity);
+
             var order = new OrderEntity
             {
-                Id = _nextOrderId++,
                 UserId = model.UserId,
                 CreatedAt = DateTime.UtcNow,
                 Status = OrderStatus.Pending,
-                TotalAmount = model.TotalAmount,
-                Items = model.Items.Select(item => new OrderItemEntity
-                {
-                    Id = _nextOrderItemId++,
-                    OrderId = 0,
-                    ProductId = item.ProductId,
-                    ProductName = item.ProductName,
-                    Quantity = item.Quantity,
-                    UnitPrice = item.UnitPrice
-                }).ToList()
+                TotalAmount = totalAmount,
+                Items = orderItems
             };
 
-            foreach (var item in order.Items)
-            {
-                item.OrderId = order.Id;
-            }
+            db.Orders.Add(order);
+            db.SaveChanges();
 
-            _orders.Add(order);
+            var createdOrder = db.Orders
+                .Include(o => o.Items)
+                .First(o => o.Id == order.Id);
 
-            return ToInfoModel(order);
+            return ToInfoModel(createdOrder);
         }
 
         public OrderInfoModel? UpdateOrder(int orderId, OrderUpdateModel model)
         {
-            var existingOrder = _orders.FirstOrDefault(o => o.Id == orderId);
+            using var db = new SkyVisionStoreContext();
 
-            if (existingOrder == null)
+            var order = db.Orders
+                .Include(o => o.Items)
+                .FirstOrDefault(o => o.Id == orderId);
+
+            if (order == null)
             {
                 return null;
             }
 
-            existingOrder.UserId = model.UserId;
-            existingOrder.Status = model.Status;
-            existingOrder.TotalAmount = model.TotalAmount;
+            var userExists = db.Users.Any(u => u.Id == model.UserId);
 
-            existingOrder.Items = model.Items.Select(item => new OrderItemEntity
+            if (!userExists)
             {
-                Id = _nextOrderItemId++,
-                OrderId = existingOrder.Id,
-                ProductId = item.ProductId,
-                ProductName = item.ProductName,
-                Quantity = item.Quantity,
-                UnitPrice = item.UnitPrice
+                return null;
+            }
+
+            db.OrderItems.RemoveRange(order.Items);
+
+            var newItems = model.Items.Select(item =>
+            {
+                var productExists = db.Products.Any(p => p.Id == item.ProductId);
+
+                if (!productExists)
+                {
+                    throw new InvalidOperationException($"Product with ID {item.ProductId} does not exist.");
+                }
+
+                return new OrderItemEntity
+                {
+                    OrderId = order.Id,
+                    ProductId = item.ProductId,
+                    ProductName = item.ProductName,
+                    Quantity = item.Quantity <= 0 ? 1 : item.Quantity,
+                    UnitPrice = item.UnitPrice
+                };
             }).ToList();
 
-            return ToInfoModel(existingOrder);
+            order.UserId = model.UserId;
+            order.Status = model.Status;
+            order.TotalAmount = model.TotalAmount > 0
+                ? model.TotalAmount
+                : newItems.Sum(item => item.UnitPrice * item.Quantity);
+            order.Items = newItems;
+
+            db.SaveChanges();
+
+            var updatedOrder = db.Orders
+                .Include(o => o.Items)
+                .First(o => o.Id == order.Id);
+
+            return ToInfoModel(updatedOrder);
         }
 
         public OrderInfoModel? UpdateOrderStatus(int orderId, OrderStatus status)
         {
-            var order = _orders.FirstOrDefault(o => o.Id == orderId);
+            using var db = new SkyVisionStoreContext();
+
+            var order = db.Orders
+                .Include(o => o.Items)
+                .FirstOrDefault(o => o.Id == orderId);
 
             if (order == null)
             {
@@ -104,19 +173,26 @@ namespace SkyVisionStore.BusinessLogic.Core.Order
 
             order.Status = status;
 
+            db.SaveChanges();
+
             return ToInfoModel(order);
         }
 
         public bool DeleteOrder(int orderId)
         {
-            var order = _orders.FirstOrDefault(o => o.Id == orderId);
+            using var db = new SkyVisionStoreContext();
+
+            var order = db.Orders
+                .Include(o => o.Items)
+                .FirstOrDefault(o => o.Id == orderId);
 
             if (order == null)
             {
                 return false;
             }
 
-            _orders.Remove(order);
+            db.Orders.Remove(order);
+            db.SaveChanges();
 
             return true;
         }
@@ -133,6 +209,7 @@ namespace SkyVisionStore.BusinessLogic.Core.Order
                 Items = order.Items.Select(ToOrderItemInfoModel).ToList()
             };
         }
+
         private static OrderItemInfoModel ToOrderItemInfoModel(OrderItemEntity item)
         {
             return new OrderItemInfoModel
