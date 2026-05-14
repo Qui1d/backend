@@ -1,6 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using SkyVisionStore.BusinessLogic.Interface;
 using SkyVisionStore.Domain.Models.Favorite;
+using System.Security.Claims;
 
 namespace SkyVisionStore.Api.Controller
 {
@@ -16,13 +18,71 @@ namespace SkyVisionStore.Api.Controller
             _favoriteActions = bl.GetFavoriteActions();
         }
 
+        [Authorize]
+        [HttpGet]
+        public IActionResult GetMyFavorites()
+        {
+            var userId = GetCurrentUserId();
+
+            if (userId == null)
+            {
+                return Unauthorized(new { Message = "Invalid token" });
+            }
+
+            var favorites = _favoriteActions.GetFavorites(userId.Value);
+
+            return Ok(favorites);
+        }
+
+        [Authorize]
+        [HttpPost("{productId:int}")]
+        public IActionResult AddToFavorites(int productId)
+        {
+            var userId = GetCurrentUserId();
+
+            if (userId == null)
+            {
+                return Unauthorized(new { Message = "Invalid token" });
+            }
+
+            var favorite = _favoriteActions.AddToFavorites(userId.Value, productId);
+
+            if (favorite == null)
+            {
+                return BadRequest(new { Message = "User or product not found" });
+            }
+
+            return Ok(favorite);
+        }
+
+        [Authorize]
+        [HttpDelete("{productId:int}")]
+        public IActionResult RemoveFromFavorites(int productId)
+        {
+            var userId = GetCurrentUserId();
+
+            if (userId == null)
+            {
+                return Unauthorized(new { Message = "Invalid token" });
+            }
+
+            var removed = _favoriteActions.RemoveFromFavorites(userId.Value, productId);
+
+            if (!removed)
+            {
+                return NotFound(new { Message = "Favorite item not found" });
+            }
+
+            return NoContent();
+        }
+
         [HttpGet("all")]
         public IActionResult GetAllFavorites()
         {
             return Ok(_favoriteActions.GetAll());
         }
 
-        [HttpGet("{id:int}")]
+        [HttpGet("id/{id:int}")]
         public IActionResult GetFavoriteById(int id)
         {
             var favorite = _favoriteActions.GetById(id);
@@ -35,12 +95,12 @@ namespace SkyVisionStore.Api.Controller
             return Ok(favorite);
         }
 
-        [HttpPost]
+        [HttpPost("create")]
         public IActionResult CreateFavorite([FromBody] FavoriteCreateModel favorite)
         {
             var createdFavorite = _favoriteActions.Create(favorite);
 
-            return Created($"/api/favorite/{createdFavorite.Id}", createdFavorite);
+            return Created($"/api/favorite/id/{createdFavorite.Id}", createdFavorite);
         }
 
         [HttpPut("{id:int}")]
@@ -56,7 +116,7 @@ namespace SkyVisionStore.Api.Controller
             return Ok(favorite);
         }
 
-        [HttpDelete("{id:int}")]
+        [HttpDelete("id/{id:int}")]
         public IActionResult DeleteFavorite(int id)
         {
             var deleted = _favoriteActions.Delete(id);
@@ -69,38 +129,16 @@ namespace SkyVisionStore.Api.Controller
             return NoContent();
         }
 
-        [HttpGet("user/{userId:int}")]
-        public IActionResult GetUserFavorites(int userId)
+        private int? GetCurrentUserId()
         {
-            var favorites = _favoriteActions.GetFavorites(userId);
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-            return Ok(favorites);
-        }
-
-        [HttpPost("add")]
-        public IActionResult AddToFavorites([FromBody] FavoriteCreateModel favorite)
-        {
-            var addedFavorite = _favoriteActions.AddToFavorites(favorite.UserId, favorite.ProductId);
-
-            if (addedFavorite == null)
+            if (!int.TryParse(userIdClaim, out var userId))
             {
-                return BadRequest(new { Message = "Product is already in favorites" });
+                return null;
             }
 
-            return Ok(addedFavorite);
-        }
-
-        [HttpDelete("remove/user/{userId:int}/product/{productId:int}")]
-        public IActionResult RemoveFromFavorites(int userId, int productId)
-        {
-            var removed = _favoriteActions.RemoveFromFavorites(userId, productId);
-
-            if (!removed)
-            {
-                return NotFound(new { Message = "Favorite item not found" });
-            }
-
-            return NoContent();
+            return userId;
         }
     }
 }

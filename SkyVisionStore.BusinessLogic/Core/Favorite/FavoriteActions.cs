@@ -34,19 +34,38 @@ namespace SkyVisionStore.BusinessLogic.Core.Favorite
 
         public FavoriteInfoModel Create(FavoriteCreateModel favorite)
         {
-            var existingFavorite = AddToFavorites(favorite.UserId, favorite.ProductId);
+            using var db = new SkyVisionStoreContext();
+
+            var userExists = db.Users.Any(u => u.Id == favorite.UserId);
+            var productExists = db.Products.Any(p => p.Id == favorite.ProductId);
+
+            if (!userExists || !productExists)
+            {
+                throw new InvalidOperationException("User or product not found.");
+            }
+
+            var existingFavorite = db.UserFavorites
+                .FirstOrDefault(f =>
+                    f.UserId == favorite.UserId &&
+                    f.ProductId == favorite.ProductId
+                );
 
             if (existingFavorite != null)
             {
-                return existingFavorite;
+                return ToInfoModel(existingFavorite);
             }
 
-            return new FavoriteInfoModel
+            var newFavorite = new FavoriteEntity
             {
                 UserId = favorite.UserId,
                 ProductId = favorite.ProductId,
                 AddedAt = DateTime.UtcNow
             };
+
+            db.UserFavorites.Add(newFavorite);
+            db.SaveChanges();
+
+            return ToInfoModel(newFavorite);
         }
 
         public FavoriteInfoModel? Update(int id, FavoriteUpdateModel updatedFavorite)
@@ -69,10 +88,12 @@ namespace SkyVisionStore.BusinessLogic.Core.Favorite
                 return null;
             }
 
-            var duplicateFavorite = db.UserFavorites.FirstOrDefault(f =>
-                f.Id != id &&
-                f.UserId == updatedFavorite.UserId &&
-                f.ProductId == updatedFavorite.ProductId);
+            var duplicateFavorite = db.UserFavorites
+                .FirstOrDefault(f =>
+                    f.Id != id &&
+                    f.UserId == updatedFavorite.UserId &&
+                    f.ProductId == updatedFavorite.ProductId
+                );
 
             if (duplicateFavorite != null)
             {
@@ -130,11 +151,14 @@ namespace SkyVisionStore.BusinessLogic.Core.Favorite
             }
 
             var existingFavorite = db.UserFavorites
-                .FirstOrDefault(f => f.UserId == userId && f.ProductId == productId);
+                .FirstOrDefault(f =>
+                    f.UserId == userId &&
+                    f.ProductId == productId
+                );
 
             if (existingFavorite != null)
             {
-                return null;
+                return ToInfoModel(existingFavorite);
             }
 
             var favorite = new FavoriteEntity
@@ -155,7 +179,10 @@ namespace SkyVisionStore.BusinessLogic.Core.Favorite
             using var db = new SkyVisionStoreContext();
 
             var favorite = db.UserFavorites
-                .FirstOrDefault(f => f.UserId == userId && f.ProductId == productId);
+                .FirstOrDefault(f =>
+                    f.UserId == userId &&
+                    f.ProductId == productId
+                );
 
             if (favorite == null)
             {
