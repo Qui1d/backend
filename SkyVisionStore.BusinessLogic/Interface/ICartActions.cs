@@ -1,16 +1,14 @@
-﻿using SkyVisionStore.Domain.Models.Cart;
-
-using CartItemEntity = SkyVisionStore.Domain.Entities.Cart.CartItem;
+﻿using SkyVisionStore.Domain.Entities.Cart;
 
 namespace SkyVisionStore.BusinessLogic.Interface
 {
     public interface ICartActions
     {
-        List<CartItemEntity> GetCartByUserId(int userId);
+        List<CartItem> GetCartByUserId(int userId);
 
-        CartItemEntity? AddToCart(AddToCartModel model);
+        CartItem? AddToCart(int userId, int productId, int quantity);
 
-        CartItemEntity? UpdateCartItem(int userId, int productId, int quantity);
+        CartItem? UpdateCartItem(int userId, int productId, int quantity);
 
         bool RemoveFromCart(int userId, int productId);
 

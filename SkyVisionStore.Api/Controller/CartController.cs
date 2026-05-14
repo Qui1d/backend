@@ -1,10 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using SkyVisionStore.BusinessLogic.Interface;
 using SkyVisionStore.Domain.Entities.Cart;
-using SkyVisionStore.Domain.Models.Cart;
+using System.Security.Claims;
 
 namespace SkyVisionStore.Api.Controller
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class CartController : ControllerBase
@@ -17,25 +19,41 @@ namespace SkyVisionStore.Api.Controller
             _cartActions = bl.GetCartActions();
         }
 
-        [HttpGet("{userId}")]
-        public IActionResult GetCartByUserId(int userId)
+        [HttpGet]
+        public IActionResult GetCart()
         {
-            var cartItems = _cartActions.GetCartByUserId(userId);
+            var userId = GetCurrentUserId();
 
-            var response = cartItems.Select(MapCartItem).ToList();
+            if (userId == null)
+            {
+                return Unauthorized(new { Message = "Invalid token" });
+            }
 
-            return Ok(response);
+            var cartItems = _cartActions.GetCartByUserId(userId.Value);
+
+            return Ok(cartItems.Select(MapCartItem));
         }
 
         [HttpPost("add")]
-        public IActionResult AddToCart([FromBody] AddToCartModel model)
+        public IActionResult AddToCart([FromBody] AddCartItemRequest model)
         {
+            var userId = GetCurrentUserId();
+
+            if (userId == null)
+            {
+                return Unauthorized(new { Message = "Invalid token" });
+            }
+
             if (model == null)
             {
                 return BadRequest(new { Message = "Cart data is required" });
             }
 
-            var item = _cartActions.AddToCart(model);
+            var item = _cartActions.AddToCart(
+                userId.Value,
+                model.ProductId,
+                model.Quantity
+            );
 
             if (item == null)
             {
@@ -45,10 +63,21 @@ namespace SkyVisionStore.Api.Controller
             return Ok(MapCartItem(item));
         }
 
-        [HttpPut("{userId}/{productId}")]
-        public IActionResult UpdateCartItem(int userId, int productId, [FromQuery] int quantity)
+        [HttpPut("{productId}")]
+        public IActionResult UpdateCartItem(int productId, [FromQuery] int quantity)
         {
-            var item = _cartActions.UpdateCartItem(userId, productId, quantity);
+            var userId = GetCurrentUserId();
+
+            if (userId == null)
+            {
+                return Unauthorized(new { Message = "Invalid token" });
+            }
+
+            var item = _cartActions.UpdateCartItem(
+                userId.Value,
+                productId,
+                quantity
+            );
 
             if (item == null)
             {
@@ -58,10 +87,17 @@ namespace SkyVisionStore.Api.Controller
             return Ok(MapCartItem(item));
         }
 
-        [HttpDelete("{userId}/{productId}")]
-        public IActionResult RemoveFromCart(int userId, int productId)
+        [HttpDelete("{productId}")]
+        public IActionResult RemoveFromCart(int productId)
         {
-            var deleted = _cartActions.RemoveFromCart(userId, productId);
+            var userId = GetCurrentUserId();
+
+            if (userId == null)
+            {
+                return Unauthorized(new { Message = "Invalid token" });
+            }
+
+            var deleted = _cartActions.RemoveFromCart(userId.Value, productId);
 
             if (!deleted)
             {
@@ -71,17 +107,31 @@ namespace SkyVisionStore.Api.Controller
             return NoContent();
         }
 
-        [HttpDelete("clear/{userId}")]
-        public IActionResult ClearCart(int userId)
+        [HttpDelete("clear")]
+        public IActionResult ClearCart()
         {
-            var cleared = _cartActions.ClearCart(userId);
+            var userId = GetCurrentUserId();
 
-            if (!cleared)
+            if (userId == null)
             {
-                return NoContent();
+                return Unauthorized(new { Message = "Invalid token" });
             }
 
+            _cartActions.ClearCart(userId.Value);
+
             return NoContent();
+        }
+
+        private int? GetCurrentUserId()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (!int.TryParse(userIdClaim, out var userId))
+            {
+                return null;
+            }
+
+            return userId;
         }
 
         private static object MapCartItem(CartItem item)
@@ -92,8 +142,6 @@ namespace SkyVisionStore.Api.Controller
                 item.UserId,
                 item.ProductId,
                 item.Quantity,
-                item.AddedAt,
-
                 Product = new
                 {
                     item.Product.Id,
@@ -116,5 +164,12 @@ namespace SkyVisionStore.Api.Controller
                 }
             };
         }
+    }
+
+    public class AddCartItemRequest
+    {
+        public int ProductId { get; set; }
+
+        public int Quantity { get; set; }
     }
 }

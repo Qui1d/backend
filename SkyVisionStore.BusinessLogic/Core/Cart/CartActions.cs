@@ -1,15 +1,13 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using SkyVisionStore.BusinessLogic.Interface;
 using SkyVisionStore.DataAccess.Context;
-using SkyVisionStore.Domain.Models.Cart;
-
-using CartItemEntity = SkyVisionStore.Domain.Entities.Cart.CartItem;
+using SkyVisionStore.Domain.Entities.Cart;
 
 namespace SkyVisionStore.BusinessLogic.Core.Cart
 {
     public class CartActions : ICartActions
     {
-        public List<CartItemEntity> GetCartByUserId(int userId)
+        public List<CartItem> GetCartByUserId(int userId)
         {
             using var db = new SkyVisionStoreContext();
 
@@ -20,54 +18,56 @@ namespace SkyVisionStore.BusinessLogic.Core.Cart
                 .ToList();
         }
 
-        public CartItemEntity? AddToCart(AddToCartModel model)
+        public CartItem? AddToCart(int userId, int productId, int quantity)
         {
             using var db = new SkyVisionStoreContext();
 
-            var userExists = db.Users.Any(u => u.Id == model.UserId);
-            var productExists = db.Products.Any(p => p.Id == model.ProductId);
+            var userExists = db.Users.Any(u => u.Id == userId);
+            var productExists = db.Products.Any(p => p.Id == productId);
 
             if (!userExists || !productExists)
             {
                 return null;
             }
 
-            var quantity = model.Quantity <= 0 ? 1 : model.Quantity;
+            var normalizedQuantity = quantity <= 0 ? 1 : quantity;
 
             var existingItem = db.CartItems
-                .FirstOrDefault(c => c.UserId == model.UserId && c.ProductId == model.ProductId);
+                .Include(c => c.Product)
+                .FirstOrDefault(c => c.UserId == userId && c.ProductId == productId);
 
             if (existingItem != null)
             {
-                existingItem.Quantity += quantity;
+                existingItem.Quantity += normalizedQuantity;
                 db.SaveChanges();
 
-                return db.CartItems
-                    .Include(c => c.Product)
-                    .FirstOrDefault(c => c.Id == existingItem.Id);
+                return existingItem;
             }
 
-            var cartItem = new CartItemEntity
+            var cartItem = new CartItem
             {
-                UserId = model.UserId,
-                ProductId = model.ProductId,
-                Quantity = quantity,
+                UserId = userId,
+                ProductId = productId,
+                Quantity = normalizedQuantity,
                 AddedAt = DateTime.UtcNow
             };
 
             db.CartItems.Add(cartItem);
             db.SaveChanges();
 
-            return db.CartItems
-                .Include(c => c.Product)
-                .FirstOrDefault(c => c.Id == cartItem.Id);
+            db.Entry(cartItem)
+                .Reference(c => c.Product)
+                .Load();
+
+            return cartItem;
         }
 
-        public CartItemEntity? UpdateCartItem(int userId, int productId, int quantity)
+        public CartItem? UpdateCartItem(int userId, int productId, int quantity)
         {
             using var db = new SkyVisionStoreContext();
 
             var item = db.CartItems
+                .Include(c => c.Product)
                 .FirstOrDefault(c => c.UserId == userId && c.ProductId == productId);
 
             if (item == null)
@@ -78,9 +78,7 @@ namespace SkyVisionStore.BusinessLogic.Core.Cart
             item.Quantity = quantity <= 0 ? 1 : quantity;
             db.SaveChanges();
 
-            return db.CartItems
-                .Include(c => c.Product)
-                .FirstOrDefault(c => c.Id == item.Id);
+            return item;
         }
 
         public bool RemoveFromCart(int userId, int productId)
