@@ -1,4 +1,5 @@
 ﻿using SkyVisionStore.Domain.Models.Cart;
+
 using CartItemEntity = SkyVisionStore.Domain.Entities.Cart.CartItem;
 
 namespace SkyVisionStore.BusinessLogic.Interface
