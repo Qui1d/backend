@@ -13,6 +13,8 @@ namespace SkyVisionStore.BusinessLogic.Interface
 
         OrderInfoModel CreateOrder(CreateOrderModel model);
 
+        OrderInfoModel? CheckoutFromCart(int userId);
+
         OrderInfoModel? UpdateOrder(int orderId, OrderUpdateModel model);
 
         OrderInfoModel? UpdateOrderStatus(int orderId, OrderStatus status);

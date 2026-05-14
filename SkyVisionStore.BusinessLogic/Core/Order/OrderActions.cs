@@ -101,6 +101,57 @@ namespace SkyVisionStore.BusinessLogic.Core.Order
             return ToInfoModel(createdOrder);
         }
 
+        public OrderInfoModel? CheckoutFromCart(int userId)
+        {
+            using var db = new SkyVisionStoreContext();
+
+            var userExists = db.Users.Any(u => u.Id == userId);
+
+            if (!userExists)
+            {
+                return null;
+            }
+
+            var cartItems = db.CartItems
+                .Include(c => c.Product)
+                .Where(c => c.UserId == userId)
+                .ToList();
+
+            if (!cartItems.Any())
+            {
+                return null;
+            }
+
+            var orderItems = cartItems.Select(item => new OrderItemEntity
+            {
+                ProductId = item.ProductId,
+                ProductName = item.Product.Title,
+                Quantity = item.Quantity <= 0 ? 1 : item.Quantity,
+                UnitPrice = item.Product.Price
+            }).ToList();
+
+            var totalAmount = orderItems.Sum(item => item.UnitPrice * item.Quantity);
+
+            var order = new OrderEntity
+            {
+                UserId = userId,
+                CreatedAt = DateTime.UtcNow,
+                Status = OrderStatus.Paid,
+                TotalAmount = totalAmount,
+                Items = orderItems
+            };
+
+            db.Orders.Add(order);
+            db.CartItems.RemoveRange(cartItems);
+            db.SaveChanges();
+
+            var createdOrder = db.Orders
+                .Include(o => o.Items)
+                .First(o => o.Id == order.Id);
+
+            return ToInfoModel(createdOrder);
+        }
+
         public OrderInfoModel? UpdateOrder(int orderId, OrderUpdateModel model)
         {
             using var db = new SkyVisionStoreContext();
@@ -172,7 +223,6 @@ namespace SkyVisionStore.BusinessLogic.Core.Order
             }
 
             order.Status = status;
-
             db.SaveChanges();
 
             return ToInfoModel(order);
