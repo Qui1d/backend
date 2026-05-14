@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using SkyVisionStore.BusinessLogic;
 using SkyVisionStore.BusinessLogic.Interface;
+using SkyVisionStore.Domain.Entities.Cart;
 using SkyVisionStore.Domain.Models.Cart;
 
 namespace SkyVisionStore.Api.Controller
@@ -21,7 +21,10 @@ namespace SkyVisionStore.Api.Controller
         public IActionResult GetCartByUserId(int userId)
         {
             var cartItems = _cartActions.GetCartByUserId(userId);
-            return Ok(cartItems);
+
+            var response = cartItems.Select(MapCartItem).ToList();
+
+            return Ok(response);
         }
 
         [HttpPost("add")]
@@ -33,7 +36,13 @@ namespace SkyVisionStore.Api.Controller
             }
 
             var item = _cartActions.AddToCart(model);
-            return Ok(item);
+
+            if (item == null)
+            {
+                return BadRequest(new { Message = "User or product not found" });
+            }
+
+            return Ok(MapCartItem(item));
         }
 
         [HttpPut("{userId}/{productId}")]
@@ -46,7 +55,7 @@ namespace SkyVisionStore.Api.Controller
                 return NotFound(new { Message = "Cart item not found" });
             }
 
-            return Ok(item);
+            return Ok(MapCartItem(item));
         }
 
         [HttpDelete("{userId}/{productId}")]
@@ -69,10 +78,43 @@ namespace SkyVisionStore.Api.Controller
 
             if (!cleared)
             {
-                return NotFound(new { Message = $"Cart for user {userId} not found" });
+                return NoContent();
             }
 
             return NoContent();
+        }
+
+        private static object MapCartItem(CartItem item)
+        {
+            return new
+            {
+                item.Id,
+                item.UserId,
+                item.ProductId,
+                item.Quantity,
+                item.AddedAt,
+
+                Product = new
+                {
+                    item.Product.Id,
+                    item.Product.Title,
+                    item.Product.Slug,
+                    item.Product.Platform,
+                    item.Product.Genre,
+                    item.Product.Price,
+                    item.Product.OldPrice,
+                    item.Product.Discount,
+                    item.Product.Image,
+                    item.Product.RecommendedImage,
+                    item.Product.Region,
+                    item.Product.Description,
+                    item.Product.Requirements,
+                    item.Product.IsNew,
+                    item.Product.IsPopular,
+                    item.Product.IsUpcoming,
+                    item.Product.CreatedAt
+                }
+            };
         }
     }
 }
