@@ -1,7 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using SkyVisionStore.BusinessLogic;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using SkyVisionStore.Api.Services;
 using SkyVisionStore.BusinessLogic.Interface;
 using SkyVisionStore.Domain.Models.Auth;
+using System.Security.Claims;
 
 namespace SkyVisionStore.Api.Controller
 {
@@ -10,11 +12,16 @@ namespace SkyVisionStore.Api.Controller
     public class AuthController : ControllerBase
     {
         private readonly IAuthActions _authActions;
+        private readonly IUserActions _userActions;
+        private readonly JwtTokenService _jwtTokenService;
 
-        public AuthController()
+        public AuthController(JwtTokenService jwtTokenService)
         {
             var bl = new SkyVisionStore.BusinessLogic.BusinessLogic();
+
             _authActions = bl.GetAuthActions();
+            _userActions = bl.GetUserActions();
+            _jwtTokenService = jwtTokenService;
         }
 
         [HttpPost("login")]
@@ -32,7 +39,13 @@ namespace SkyVisionStore.Api.Controller
                 return Unauthorized(new { Message = "Invalid email or password" });
             }
 
-            return Ok(user);
+            var token = _jwtTokenService.GenerateToken(user);
+
+            return Ok(new
+            {
+                Token = token,
+                User = user
+            });
         }
 
         [HttpPost("register")]
@@ -50,7 +63,34 @@ namespace SkyVisionStore.Api.Controller
                 return BadRequest(new { Message = "User registration failed" });
             }
 
-            return Created($"/api/user/{user.Id}", user);
+            var token = _jwtTokenService.GenerateToken(user);
+
+            return Ok(new
+            {
+                Token = token,
+                User = user
+            });
+        }
+
+        [Authorize]
+        [HttpGet("me")]
+        public IActionResult GetCurrentUser()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (!int.TryParse(userIdClaim, out var userId))
+            {
+                return Unauthorized(new { Message = "Invalid token" });
+            }
+
+            var user = _userActions.GetById(userId);
+
+            if (user == null)
+            {
+                return NotFound(new { Message = "User not found" });
+            }
+
+            return Ok(user);
         }
     }
 }
