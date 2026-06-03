@@ -1,4 +1,5 @@
-﻿using SkyVisionStore.BusinessLogic.Interface;
+﻿using SkyVisionStore.BusinessLogic.Core.Auth;
+using SkyVisionStore.BusinessLogic.Interface;
 using SkyVisionStore.DataAccess.Context;
 using SkyVisionStore.Domain.Models.User;
 using UserEntity = SkyVisionStore.Domain.Entities.User.User;
@@ -12,8 +13,8 @@ namespace SkyVisionStore.BusinessLogic.Core.User
             using var db = new SkyVisionStoreContext();
 
             return db.Users
-                .OrderBy(u => u.Id)
-                .Select(u => ToInfoModel(u))
+                .OrderBy(user => user.Id)
+                .Select(user => ToInfoModel(user))
                 .ToList();
         }
 
@@ -22,7 +23,7 @@ namespace SkyVisionStore.BusinessLogic.Core.User
             using var db = new SkyVisionStoreContext();
 
             var user = db.Users
-                .FirstOrDefault(u => u.Id == id);
+                .FirstOrDefault(user => user.Id == id);
 
             if (user == null)
             {
@@ -37,12 +38,35 @@ namespace SkyVisionStore.BusinessLogic.Core.User
             using var db = new SkyVisionStoreContext();
 
             var user = db.Users
-                .FirstOrDefault(u => u.Email == email && u.Password == password);
+                .FirstOrDefault(user => user.Email == email);
 
             if (user == null)
             {
                 return null;
             }
+
+            var isHashedPassword = PasswordHasher.IsHashedPassword(user.Password);
+
+            if (isHashedPassword)
+            {
+                var isPasswordValid = PasswordHasher.VerifyPassword(password, user.Password);
+
+                if (!isPasswordValid)
+                {
+                    return null;
+                }
+
+                return ToInfoModel(user);
+            }
+
+            
+            if (user.Password != password)
+            {
+                return null;
+            }
+
+            user.Password = PasswordHasher.HashPassword(password);
+            db.SaveChanges();
 
             return ToInfoModel(user);
         }
@@ -51,7 +75,7 @@ namespace SkyVisionStore.BusinessLogic.Core.User
         {
             using var db = new SkyVisionStoreContext();
 
-            return db.Users.Any(u => u.Email == email);
+            return db.Users.Any(user => user.Email == email);
         }
 
         public UserInfoModel Create(UserCreateModel user)
@@ -62,7 +86,7 @@ namespace SkyVisionStore.BusinessLogic.Core.User
             {
                 Username = user.Username,
                 Email = user.Email,
-                Password = user.Password,
+                Password = PasswordHasher.HashPassword(user.Password),
                 Role = user.Role,
                 CreatedAt = DateTime.UtcNow
             };
@@ -78,7 +102,7 @@ namespace SkyVisionStore.BusinessLogic.Core.User
             using var db = new SkyVisionStoreContext();
 
             var existingUser = db.Users
-                .FirstOrDefault(u => u.Id == id);
+                .FirstOrDefault(user => user.Id == id);
 
             if (existingUser == null)
             {
@@ -87,7 +111,12 @@ namespace SkyVisionStore.BusinessLogic.Core.User
 
             existingUser.Username = updatedUser.Username;
             existingUser.Email = updatedUser.Email;
-            existingUser.Password = updatedUser.Password;
+
+            if (!string.IsNullOrWhiteSpace(updatedUser.Password))
+            {
+                existingUser.Password = PasswordHasher.HashPassword(updatedUser.Password);
+            }
+
             existingUser.Role = updatedUser.Role;
 
             db.SaveChanges();
@@ -100,7 +129,7 @@ namespace SkyVisionStore.BusinessLogic.Core.User
             using var db = new SkyVisionStoreContext();
 
             var user = db.Users
-                .FirstOrDefault(u => u.Id == id);
+                .FirstOrDefault(user => user.Id == id);
 
             if (user == null)
             {
