@@ -24,6 +24,7 @@ namespace SkyVisionStore.Api.Controller
             _jwtTokenService = jwtTokenService;
         }
 
+        [AllowAnonymous]
         [HttpPost("login")]
         public IActionResult Login([FromBody] UserLoginData loginData)
         {
@@ -48,6 +49,7 @@ namespace SkyVisionStore.Api.Controller
             });
         }
 
+        [AllowAnonymous]
         [HttpPost("register")]
         public IActionResult Register([FromBody] UserRegisterData registerData)
         {

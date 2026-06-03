@@ -19,6 +19,7 @@ namespace SkyVisionStore.Api.Controller
             _cartActions = bl.GetCartActions();
         }
 
+        [Authorize]
         [HttpGet]
         public IActionResult GetCart()
         {
@@ -34,6 +35,7 @@ namespace SkyVisionStore.Api.Controller
             return Ok(cartItems.Select(MapCartItem));
         }
 
+        [Authorize]
         [HttpPost("add")]
         public IActionResult AddToCart([FromBody] AddCartItemRequest model)
         {
@@ -63,6 +65,7 @@ namespace SkyVisionStore.Api.Controller
             return Ok(MapCartItem(item));
         }
 
+        [Authorize]
         [HttpPut("{productId}")]
         public IActionResult UpdateCartItem(int productId, [FromQuery] int quantity)
         {
@@ -87,6 +90,7 @@ namespace SkyVisionStore.Api.Controller
             return Ok(MapCartItem(item));
         }
 
+        [Authorize]
         [HttpDelete("{productId}")]
         public IActionResult RemoveFromCart(int productId)
         {
@@ -107,6 +111,7 @@ namespace SkyVisionStore.Api.Controller
             return NoContent();
         }
 
+        [Authorize]
         [HttpDelete("clear")]
         public IActionResult ClearCart()
         {

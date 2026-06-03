@@ -76,12 +76,14 @@ namespace SkyVisionStore.Api.Controller
             return NoContent();
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpGet("all")]
         public IActionResult GetAllFavorites()
         {
             return Ok(_favoriteActions.GetAll());
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpGet("id/{id:int}")]
         public IActionResult GetFavoriteById(int id)
         {
@@ -95,6 +97,7 @@ namespace SkyVisionStore.Api.Controller
             return Ok(favorite);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPost("create")]
         public IActionResult CreateFavorite([FromBody] FavoriteCreateModel favorite)
         {
@@ -103,6 +106,7 @@ namespace SkyVisionStore.Api.Controller
             return Created($"/api/favorite/id/{createdFavorite.Id}", createdFavorite);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPut("{id:int}")]
         public IActionResult UpdateFavorite(int id, [FromBody] FavoriteUpdateModel updatedFavorite)
         {
@@ -116,6 +120,7 @@ namespace SkyVisionStore.Api.Controller
             return Ok(favorite);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpDelete("id/{id:int}")]
         public IActionResult DeleteFavorite(int id)
         {

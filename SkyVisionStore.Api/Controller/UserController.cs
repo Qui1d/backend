@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using SkyVisionStore.BusinessLogic.Interface;
 using SkyVisionStore.Domain.Models.User;
 
@@ -16,12 +17,14 @@ namespace SkyVisionStore.Api.Controller
             _userActions = bl.GetUserActions();
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpGet("all")]
         public IActionResult GetAllUsers()
         {
             return Ok(_userActions.GetAll());
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpGet("{id}")]
         public IActionResult GetUserById(int id)
         {
@@ -35,6 +38,7 @@ namespace SkyVisionStore.Api.Controller
             return Ok(user);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPost]
         public IActionResult CreateUser([FromBody] UserCreateModel user)
         {
@@ -43,6 +47,7 @@ namespace SkyVisionStore.Api.Controller
             return Created($"/api/user/{createdUser.Id}", createdUser);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPut("{id}")]
         public IActionResult UpdateUser(int id, [FromBody] UserUpdateModel updatedUser)
         {
@@ -56,6 +61,7 @@ namespace SkyVisionStore.Api.Controller
             return Ok(user);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
         public IActionResult DeleteUser(int id)
         {

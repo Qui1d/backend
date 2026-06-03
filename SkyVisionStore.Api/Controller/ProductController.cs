@@ -17,12 +17,14 @@ namespace SkyVisionStore.Api.Controller
             _productActions = bl.GetProductActions();
         }
 
+        [AllowAnonymous]
         [HttpGet("all")]
         public IActionResult GetAllProducts()
         {
             return Ok(_productActions.GetAll());
         }
 
+        [AllowAnonymous]
         [HttpGet("slug/{slug}")]
         public IActionResult GetProductBySlug(string slug)
         {
@@ -36,6 +38,7 @@ namespace SkyVisionStore.Api.Controller
             return Ok(product);
         }
 
+        [AllowAnonymous]
         [HttpGet("{id}")]
         public IActionResult GetProductById(int id)
         {

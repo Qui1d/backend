@@ -56,12 +56,14 @@ namespace SkyVisionStore.Api.Controller
             return Ok(order);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpGet("all")]
         public IActionResult GetAllOrders()
         {
             return Ok(_orderActions.GetAll());
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpGet("user/{userId:int}")]
         public IActionResult GetOrdersByUserId(int userId)
         {
@@ -70,6 +72,7 @@ namespace SkyVisionStore.Api.Controller
             return Ok(orders);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpGet("{orderId:int}")]
         public IActionResult GetOrderById(int orderId)
         {
@@ -83,6 +86,7 @@ namespace SkyVisionStore.Api.Controller
             return Ok(order);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPost("create")]
         public IActionResult CreateOrder([FromBody] CreateOrderModel model)
         {
@@ -96,6 +100,7 @@ namespace SkyVisionStore.Api.Controller
             return Created($"/api/order/{order.Id}", order);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPut("{orderId:int}")]
         public IActionResult UpdateOrder(int orderId, [FromBody] OrderUpdateModel model)
         {
@@ -109,6 +114,7 @@ namespace SkyVisionStore.Api.Controller
             return Ok(order);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPut("{orderId:int}/status")]
         public IActionResult UpdateOrderStatus(int orderId, [FromQuery] OrderStatus status)
         {
@@ -122,6 +128,7 @@ namespace SkyVisionStore.Api.Controller
             return Ok(order);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{orderId:int}")]
         public IActionResult DeleteOrder(int orderId)
         {

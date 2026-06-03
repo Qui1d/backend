@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using SkyVisionStore.BusinessLogic.Interface;
 using SkyVisionStore.Domain.Models.Coupon;
 
@@ -16,12 +17,14 @@ namespace SkyVisionStore.Api.Controller
             _couponActions = bl.GetCouponActions();
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpGet("all")]
         public IActionResult GetAllCoupons()
         {
             return Ok(_couponActions.GetAll());
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpGet("{id}")]
         public IActionResult GetCouponById(int id)
         {
@@ -35,6 +38,7 @@ namespace SkyVisionStore.Api.Controller
             return Ok(coupon);
         }
 
+        [Authorize]
         [HttpGet("code/{code}")]
         public IActionResult GetCouponByCode(string code)
         {
@@ -48,6 +52,7 @@ namespace SkyVisionStore.Api.Controller
             return Ok(coupon);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPost]
         public IActionResult CreateCoupon([FromBody] CouponCreateModel coupon)
         {
@@ -56,6 +61,7 @@ namespace SkyVisionStore.Api.Controller
             return Created($"/api/coupon/{createdCoupon.Id}", createdCoupon);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPut("{id}")]
         public IActionResult UpdateCoupon(int id, [FromBody] CouponUpdateModel updatedCoupon)
         {
@@ -69,6 +75,7 @@ namespace SkyVisionStore.Api.Controller
             return Ok(coupon);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
         public IActionResult DeleteCoupon(int id)
         {
@@ -82,6 +89,7 @@ namespace SkyVisionStore.Api.Controller
             return NoContent();
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpGet("user/{userId}")]
         public IActionResult GetUserCoupons(int userId)
         {
@@ -90,6 +98,7 @@ namespace SkyVisionStore.Api.Controller
             return Ok(coupons);
         }
 
+        [Authorize]
         [HttpPost("activate")]
         public IActionResult ActivateCoupon([FromBody] ActivateCouponModel model)
         {

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace SkyVisionStore.Api.Controller
@@ -7,6 +8,7 @@ namespace SkyVisionStore.Api.Controller
     [ApiController]
     public class HealthController : ControllerBase
     {
+        [AllowAnonymous]
         [HttpGet("ping")]
         public IActionResult Ping()
         {
