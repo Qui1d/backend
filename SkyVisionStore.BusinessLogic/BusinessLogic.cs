@@ -3,8 +3,8 @@ using SkyVisionStore.BusinessLogic.Core.Cart;
 using SkyVisionStore.BusinessLogic.Core.Coupon;
 using SkyVisionStore.BusinessLogic.Core.Favorite;
 using SkyVisionStore.BusinessLogic.Core.Order;
-using SkyVisionStore.BusinessLogic.Core.Product;
 using SkyVisionStore.BusinessLogic.Core.User;
+using SkyVisionStore.BusinessLogic.Functions.Product;
 using SkyVisionStore.BusinessLogic.Interface;
 
 namespace SkyVisionStore.BusinessLogic
@@ -23,7 +23,7 @@ namespace SkyVisionStore.BusinessLogic
 
         public IProductActions GetProductActions()
         {
-            return new ProductActions();
+            return new ProductFlow();
         }
 
         public ICartActions GetCartActions()

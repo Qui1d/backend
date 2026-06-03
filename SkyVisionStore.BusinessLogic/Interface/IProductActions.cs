@@ -1,4 +1,5 @@
-﻿using ProductEntity = SkyVisionStore.Domain.Entities.Product.Product;
+﻿using SkyVisionStore.Domain.Models.Product;
+using ProductEntity = SkyVisionStore.Domain.Entities.Product.Product;
 
 namespace SkyVisionStore.BusinessLogic.Interface
 {
@@ -10,9 +11,9 @@ namespace SkyVisionStore.BusinessLogic.Interface
 
         ProductEntity? GetBySlug(string slug);
 
-        ProductEntity Create(ProductEntity product);
+        ProductEntity Create(ProductCreateModel product);
 
-        ProductEntity? Update(int id, ProductEntity updatedProduct);
+        ProductEntity? Update(int id, ProductUpdateModel updatedProduct);
 
         bool Delete(int id);
     }

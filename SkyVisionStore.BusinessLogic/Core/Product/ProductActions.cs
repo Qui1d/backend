@@ -1,6 +1,6 @@
 ﻿using SkyVisionStore.BusinessLogic.Interface;
 using SkyVisionStore.DataAccess.Context;
-
+using SkyVisionStore.Domain.Models.Product;
 using ProductEntity = SkyVisionStore.Domain.Entities.Product.Product;
 
 namespace SkyVisionStore.BusinessLogic.Core.Product
@@ -12,7 +12,7 @@ namespace SkyVisionStore.BusinessLogic.Core.Product
             using var db = new SkyVisionStoreContext();
 
             return db.Products
-                .OrderBy(p => p.Id)
+                .OrderBy(product => product.Id)
                 .ToList();
         }
 
@@ -21,20 +21,18 @@ namespace SkyVisionStore.BusinessLogic.Core.Product
             using var db = new SkyVisionStoreContext();
 
             return db.Products
-                .FirstOrDefault(p => p.Id == id);
+                .FirstOrDefault(product => product.Id == id);
         }
 
         public ProductEntity? GetBySlug(string slug)
         {
             using var db = new SkyVisionStoreContext();
 
-            var normalizedSlug = slug.Trim().ToLower();
-
             return db.Products
-                .FirstOrDefault(p => p.Slug.ToLower() == normalizedSlug);
+                .FirstOrDefault(product => product.Slug == slug);
         }
 
-        public ProductEntity Create(ProductEntity product)
+        public ProductEntity Create(ProductCreateModel product)
         {
             using var db = new SkyVisionStoreContext();
 
@@ -64,12 +62,12 @@ namespace SkyVisionStore.BusinessLogic.Core.Product
             return newProduct;
         }
 
-        public ProductEntity? Update(int id, ProductEntity updatedProduct)
+        public ProductEntity? Update(int id, ProductUpdateModel updatedProduct)
         {
             using var db = new SkyVisionStoreContext();
 
             var existingProduct = db.Products
-                .FirstOrDefault(p => p.Id == id);
+                .FirstOrDefault(product => product.Id == id);
 
             if (existingProduct == null)
             {
@@ -102,7 +100,7 @@ namespace SkyVisionStore.BusinessLogic.Core.Product
             using var db = new SkyVisionStoreContext();
 
             var product = db.Products
-                .FirstOrDefault(p => p.Id == id);
+                .FirstOrDefault(product => product.Id == id);
 
             if (product == null)
             {
