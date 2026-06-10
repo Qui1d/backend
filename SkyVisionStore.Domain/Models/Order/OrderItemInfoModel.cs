@@ -13,5 +13,7 @@
         public int Quantity { get; set; }
 
         public decimal UnitPrice { get; set; }
+
+        public string GameKey { get; set; } = string.Empty;
     }
 }

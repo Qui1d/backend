@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SkyVisionStore.DataAccess.Context;
 
@@ -11,9 +12,11 @@ using SkyVisionStore.DataAccess.Context;
 namespace SkyVisionStore.DataAccess.Migrations
 {
     [DbContext(typeof(SkyVisionStoreContext))]
-    partial class SkyVisionStoreContextModelSnapshot : ModelSnapshot
+    [Migration("20260610100322_AddGameKeyToOrderItems")]
+    partial class AddGameKeyToOrderItems
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

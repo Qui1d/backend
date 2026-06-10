@@ -26,6 +26,10 @@ namespace SkyVisionStore.Domain.Entities.Order
         [Required]
         public decimal UnitPrice { get; set; }
 
+        [Required]
+        [StringLength(30)]
+        public string GameKey { get; set; } = string.Empty;
+
         public Order Order { get; set; } = null!;
 
         public ProductEntity Product { get; set; } = null!;

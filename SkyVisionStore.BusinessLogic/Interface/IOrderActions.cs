@@ -11,9 +11,9 @@ namespace SkyVisionStore.BusinessLogic.Interface
 
         OrderInfoModel? GetOrderById(int orderId);
 
-        OrderInfoModel CreateOrder(CreateOrderModel model);
-
         OrderInfoModel? CheckoutFromCart(int userId);
+
+        OrderInfoModel CreateOrder(CreateOrderModel model);
 
         OrderInfoModel? UpdateOrder(int orderId, OrderUpdateModel model);
 

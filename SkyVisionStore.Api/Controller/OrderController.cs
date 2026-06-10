@@ -1,9 +1,9 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SkyVisionStore.BusinessLogic.Interface;
 using SkyVisionStore.Domain.Enums;
 using SkyVisionStore.Domain.Models.Order;
-using System.Security.Claims;
 
 namespace SkyVisionStore.Api.Controller
 {
@@ -19,43 +19,6 @@ namespace SkyVisionStore.Api.Controller
             _orderActions = bl.GetOrderActions();
         }
 
-        [Authorize]
-        [HttpGet("my")]
-        public IActionResult GetMyOrders()
-        {
-            var userId = GetCurrentUserId();
-
-            if (userId == null)
-            {
-                return Unauthorized(new { Message = "Invalid token" });
-            }
-
-            var orders = _orderActions.GetOrdersByUserId(userId.Value);
-
-            return Ok(orders);
-        }
-
-        [Authorize]
-        [HttpPost("checkout")]
-        public IActionResult Checkout()
-        {
-            var userId = GetCurrentUserId();
-
-            if (userId == null)
-            {
-                return Unauthorized(new { Message = "Invalid token" });
-            }
-
-            var order = _orderActions.CheckoutFromCart(userId.Value);
-
-            if (order == null)
-            {
-                return BadRequest(new { Message = "Cart is empty or user not found" });
-            }
-
-            return Ok(order);
-        }
-
         [Authorize(Roles = "Admin")]
         [HttpGet("all")]
         public IActionResult GetAllOrders()
@@ -67,9 +30,7 @@ namespace SkyVisionStore.Api.Controller
         [HttpGet("user/{userId:int}")]
         public IActionResult GetOrdersByUserId(int userId)
         {
-            var orders = _orderActions.GetOrdersByUserId(userId);
-
-            return Ok(orders);
+            return Ok(_orderActions.GetOrdersByUserId(userId));
         }
 
         [Authorize(Roles = "Admin")]
@@ -86,15 +47,47 @@ namespace SkyVisionStore.Api.Controller
             return Ok(order);
         }
 
+        [Authorize]
+        [HttpGet("my")]
+        public IActionResult GetMyOrders()
+        {
+            var userId = GetCurrentUserId();
+
+            if (userId == null)
+            {
+                return Unauthorized(new { Message = "User ID was not found in token" });
+            }
+
+            var orders = _orderActions.GetOrdersByUserId(userId.Value);
+
+            return Ok(orders);
+        }
+
+        [Authorize]
+        [HttpPost("checkout")]
+        public IActionResult Checkout()
+        {
+            var userId = GetCurrentUserId();
+
+            if (userId == null)
+            {
+                return Unauthorized(new { Message = "User ID was not found in token" });
+            }
+
+            var order = _orderActions.CheckoutFromCart(userId.Value);
+
+            if (order == null)
+            {
+                return BadRequest(new { Message = "Cart is empty" });
+            }
+
+            return Ok(order);
+        }
+
         [Authorize(Roles = "Admin")]
         [HttpPost("create")]
         public IActionResult CreateOrder([FromBody] CreateOrderModel model)
         {
-            if (model == null)
-            {
-                return BadRequest(new { Message = "Order data is required" });
-            }
-
             var order = _orderActions.CreateOrder(model);
 
             return Created($"/api/order/{order.Id}", order);
@@ -144,9 +137,12 @@ namespace SkyVisionStore.Api.Controller
 
         private int? GetCurrentUserId()
         {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userIdValue =
+                User.FindFirstValue(ClaimTypes.NameIdentifier)
+                ?? User.FindFirstValue("id")
+                ?? User.FindFirstValue("userId");
 
-            if (!int.TryParse(userIdClaim, out var userId))
+            if (!int.TryParse(userIdValue, out var userId))
             {
                 return null;
             }

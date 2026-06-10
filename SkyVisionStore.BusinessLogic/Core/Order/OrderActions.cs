@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Security.Cryptography;
+using Microsoft.EntityFrameworkCore;
 using SkyVisionStore.BusinessLogic.Interface;
 using SkyVisionStore.DataAccess.Context;
 using SkyVisionStore.Domain.Enums;
@@ -10,27 +11,31 @@ namespace SkyVisionStore.BusinessLogic.Core.Order
 {
     public class OrderActions : IOrderActions
     {
+        private const string GameKeySymbols = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
         public List<OrderInfoModel> GetAll()
         {
             using var db = new SkyVisionStoreContext();
 
-            return db.Orders
-                .Include(o => o.Items)
-                .OrderByDescending(o => o.CreatedAt)
-                .Select(o => ToInfoModel(o))
+            var orders = db.Orders
+                .Include(order => order.Items)
+                .OrderByDescending(order => order.CreatedAt)
                 .ToList();
+
+            return orders.Select(ToInfoModel).ToList();
         }
 
         public List<OrderInfoModel> GetOrdersByUserId(int userId)
         {
             using var db = new SkyVisionStoreContext();
 
-            return db.Orders
-                .Include(o => o.Items)
-                .Where(o => o.UserId == userId)
-                .OrderByDescending(o => o.CreatedAt)
-                .Select(o => ToInfoModel(o))
+            var orders = db.Orders
+                .Include(order => order.Items)
+                .Where(order => order.UserId == userId)
+                .OrderByDescending(order => order.CreatedAt)
                 .ToList();
+
+            return orders.Select(ToInfoModel).ToList();
         }
 
         public OrderInfoModel? GetOrderById(int orderId)
@@ -38,8 +43,8 @@ namespace SkyVisionStore.BusinessLogic.Core.Order
             using var db = new SkyVisionStoreContext();
 
             var order = db.Orders
-                .Include(o => o.Items)
-                .FirstOrDefault(o => o.Id == orderId);
+                .Include(order => order.Items)
+                .FirstOrDefault(order => order.Id == orderId);
 
             if (order == null)
             {
@@ -49,72 +54,13 @@ namespace SkyVisionStore.BusinessLogic.Core.Order
             return ToInfoModel(order);
         }
 
-        public OrderInfoModel CreateOrder(CreateOrderModel model)
-        {
-            using var db = new SkyVisionStoreContext();
-
-            var userExists = db.Users.Any(u => u.Id == model.UserId);
-
-            if (!userExists)
-            {
-                throw new InvalidOperationException($"User with ID {model.UserId} does not exist.");
-            }
-
-            var orderItems = model.Items.Select(item =>
-            {
-                var productExists = db.Products.Any(p => p.Id == item.ProductId);
-
-                if (!productExists)
-                {
-                    throw new InvalidOperationException($"Product with ID {item.ProductId} does not exist.");
-                }
-
-                return new OrderItemEntity
-                {
-                    ProductId = item.ProductId,
-                    ProductName = item.ProductName,
-                    Quantity = item.Quantity <= 0 ? 1 : item.Quantity,
-                    UnitPrice = item.UnitPrice
-                };
-            }).ToList();
-
-            var totalAmount = model.TotalAmount > 0
-                ? model.TotalAmount
-                : orderItems.Sum(item => item.UnitPrice * item.Quantity);
-
-            var order = new OrderEntity
-            {
-                UserId = model.UserId,
-                CreatedAt = DateTime.UtcNow,
-                Status = OrderStatus.Pending,
-                TotalAmount = totalAmount,
-                Items = orderItems
-            };
-
-            db.Orders.Add(order);
-            db.SaveChanges();
-
-            var createdOrder = db.Orders
-                .Include(o => o.Items)
-                .First(o => o.Id == order.Id);
-
-            return ToInfoModel(createdOrder);
-        }
-
         public OrderInfoModel? CheckoutFromCart(int userId)
         {
             using var db = new SkyVisionStoreContext();
 
-            var userExists = db.Users.Any(u => u.Id == userId);
-
-            if (!userExists)
-            {
-                return null;
-            }
-
             var cartItems = db.CartItems
-                .Include(c => c.Product)
-                .Where(c => c.UserId == userId)
+                .Include(cartItem => cartItem.Product)
+                .Where(cartItem => cartItem.UserId == userId)
                 .ToList();
 
             if (!cartItems.Any())
@@ -122,22 +68,32 @@ namespace SkyVisionStore.BusinessLogic.Core.Order
                 return null;
             }
 
-            var orderItems = cartItems.Select(item => new OrderItemEntity
-            {
-                ProductId = item.ProductId,
-                ProductName = item.Product.Title,
-                Quantity = item.Quantity <= 0 ? 1 : item.Quantity,
-                UnitPrice = item.Product.Price
-            }).ToList();
+            var reservedKeys = new HashSet<string>();
+            var orderItems = new List<OrderItemEntity>();
 
-            var totalAmount = orderItems.Sum(item => item.UnitPrice * item.Quantity);
+            foreach (var cartItem in cartItems)
+            {
+                var quantity = cartItem.Quantity <= 0 ? 1 : cartItem.Quantity;
+
+                for (var i = 0; i < quantity; i++)
+                {
+                    orderItems.Add(new OrderItemEntity
+                    {
+                        ProductId = cartItem.ProductId,
+                        ProductName = cartItem.Product.Title,
+                        Quantity = 1,
+                        UnitPrice = cartItem.Product.Price,
+                        GameKey = GenerateUniqueGameKey(db, reservedKeys)
+                    });
+                }
+            }
 
             var order = new OrderEntity
             {
                 UserId = userId,
                 CreatedAt = DateTime.UtcNow,
-                Status = OrderStatus.Paid,
-                TotalAmount = totalAmount,
+                Status = OrderStatus.Completed,
+                TotalAmount = orderItems.Sum(item => item.UnitPrice * item.Quantity),
                 Items = orderItems
             };
 
@@ -145,11 +101,60 @@ namespace SkyVisionStore.BusinessLogic.Core.Order
             db.CartItems.RemoveRange(cartItems);
             db.SaveChanges();
 
-            var createdOrder = db.Orders
-                .Include(o => o.Items)
-                .First(o => o.Id == order.Id);
+            return ToInfoModel(order);
+        }
 
-            return ToInfoModel(createdOrder);
+        public OrderInfoModel CreateOrder(CreateOrderModel model)
+        {
+            using var db = new SkyVisionStoreContext();
+
+            var userExists = db.Users.Any(user => user.Id == model.UserId);
+
+            if (!userExists)
+            {
+                throw new InvalidOperationException($"User with ID {model.UserId} does not exist.");
+            }
+
+            var reservedKeys = new HashSet<string>();
+            var orderItems = new List<OrderItemEntity>();
+
+            foreach (var item in model.Items)
+            {
+                var productExists = db.Products.Any(product => product.Id == item.ProductId);
+
+                if (!productExists)
+                {
+                    throw new InvalidOperationException($"Product with ID {item.ProductId} does not exist.");
+                }
+
+                var quantity = item.Quantity <= 0 ? 1 : item.Quantity;
+
+                for (var i = 0; i < quantity; i++)
+                {
+                    orderItems.Add(new OrderItemEntity
+                    {
+                        ProductId = item.ProductId,
+                        ProductName = item.ProductName,
+                        Quantity = 1,
+                        UnitPrice = item.UnitPrice,
+                        GameKey = GenerateUniqueGameKey(db, reservedKeys)
+                    });
+                }
+            }
+
+            var order = new OrderEntity
+            {
+                UserId = model.UserId,
+                CreatedAt = DateTime.UtcNow,
+                Status = OrderStatus.Completed,
+                TotalAmount = orderItems.Sum(item => item.UnitPrice * item.Quantity),
+                Items = orderItems
+            };
+
+            db.Orders.Add(order);
+            db.SaveChanges();
+
+            return ToInfoModel(order);
         }
 
         public OrderInfoModel? UpdateOrder(int orderId, OrderUpdateModel model)
@@ -157,15 +162,15 @@ namespace SkyVisionStore.BusinessLogic.Core.Order
             using var db = new SkyVisionStoreContext();
 
             var order = db.Orders
-                .Include(o => o.Items)
-                .FirstOrDefault(o => o.Id == orderId);
+                .Include(order => order.Items)
+                .FirstOrDefault(order => order.Id == orderId);
 
             if (order == null)
             {
                 return null;
             }
 
-            var userExists = db.Users.Any(u => u.Id == model.UserId);
+            var userExists = db.Users.Any(user => user.Id == model.UserId);
 
             if (!userExists)
             {
@@ -174,39 +179,42 @@ namespace SkyVisionStore.BusinessLogic.Core.Order
 
             db.OrderItems.RemoveRange(order.Items);
 
-            var newItems = model.Items.Select(item =>
+            var reservedKeys = new HashSet<string>();
+            var newItems = new List<OrderItemEntity>();
+
+            foreach (var item in model.Items)
             {
-                var productExists = db.Products.Any(p => p.Id == item.ProductId);
+                var productExists = db.Products.Any(product => product.Id == item.ProductId);
 
                 if (!productExists)
                 {
                     throw new InvalidOperationException($"Product with ID {item.ProductId} does not exist.");
                 }
 
-                return new OrderItemEntity
+                var quantity = item.Quantity <= 0 ? 1 : item.Quantity;
+
+                for (var i = 0; i < quantity; i++)
                 {
-                    OrderId = order.Id,
-                    ProductId = item.ProductId,
-                    ProductName = item.ProductName,
-                    Quantity = item.Quantity <= 0 ? 1 : item.Quantity,
-                    UnitPrice = item.UnitPrice
-                };
-            }).ToList();
+                    newItems.Add(new OrderItemEntity
+                    {
+                        OrderId = order.Id,
+                        ProductId = item.ProductId,
+                        ProductName = item.ProductName,
+                        Quantity = 1,
+                        UnitPrice = item.UnitPrice,
+                        GameKey = GenerateUniqueGameKey(db, reservedKeys)
+                    });
+                }
+            }
 
             order.UserId = model.UserId;
             order.Status = model.Status;
-            order.TotalAmount = model.TotalAmount > 0
-                ? model.TotalAmount
-                : newItems.Sum(item => item.UnitPrice * item.Quantity);
+            order.TotalAmount = newItems.Sum(item => item.UnitPrice * item.Quantity);
             order.Items = newItems;
 
             db.SaveChanges();
 
-            var updatedOrder = db.Orders
-                .Include(o => o.Items)
-                .First(o => o.Id == order.Id);
-
-            return ToInfoModel(updatedOrder);
+            return ToInfoModel(order);
         }
 
         public OrderInfoModel? UpdateOrderStatus(int orderId, OrderStatus status)
@@ -214,8 +222,8 @@ namespace SkyVisionStore.BusinessLogic.Core.Order
             using var db = new SkyVisionStoreContext();
 
             var order = db.Orders
-                .Include(o => o.Items)
-                .FirstOrDefault(o => o.Id == orderId);
+                .Include(order => order.Items)
+                .FirstOrDefault(order => order.Id == orderId);
 
             if (order == null)
             {
@@ -233,8 +241,8 @@ namespace SkyVisionStore.BusinessLogic.Core.Order
             using var db = new SkyVisionStoreContext();
 
             var order = db.Orders
-                .Include(o => o.Items)
-                .FirstOrDefault(o => o.Id == orderId);
+                .Include(order => order.Items)
+                .FirstOrDefault(order => order.Id == orderId);
 
             if (order == null)
             {
@@ -269,8 +277,48 @@ namespace SkyVisionStore.BusinessLogic.Core.Order
                 ProductId = item.ProductId,
                 ProductName = item.ProductName,
                 Quantity = item.Quantity,
-                UnitPrice = item.UnitPrice
+                UnitPrice = item.UnitPrice,
+                GameKey = item.GameKey
             };
+        }
+
+        private static string GenerateUniqueGameKey(
+            SkyVisionStoreContext db,
+            HashSet<string> reservedKeys
+        )
+        {
+            string gameKey;
+
+            do
+            {
+                gameKey = GenerateGameKey();
+            }
+            while (
+                reservedKeys.Contains(gameKey) ||
+                db.OrderItems.Any(item => item.GameKey == gameKey)
+            );
+
+            reservedKeys.Add(gameKey);
+
+            return gameKey;
+        }
+
+        private static string GenerateGameKey()
+        {
+            return $"{GenerateGameKeyPart()}-{GenerateGameKeyPart()}-{GenerateGameKeyPart()}";
+        }
+
+        private static string GenerateGameKeyPart()
+        {
+            var chars = new char[5];
+
+            for (var i = 0; i < chars.Length; i++)
+            {
+                var index = RandomNumberGenerator.GetInt32(GameKeySymbols.Length);
+                chars[i] = GameKeySymbols[index];
+            }
+
+            return new string(chars);
         }
     }
 }
